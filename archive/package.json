@@ -1,0 +1,42 @@
+{
+  "name": "workflow-email-mobicycle",
+  "version": "1.0.0",
+  "description": "Legal Email Triage Workflow for MobiCycle Account - rose@mobicycle.ee",
+  "main": "src/index.ts",
+  "scripts": {
+    "dev": "wrangler dev",
+    "deploy": "wrangler deploy",
+    "deploy:prod": "wrangler deploy --env production",
+    "deploy:dev": "wrangler deploy --env development",
+    "tail": "wrangler tail",
+    "test": "bun test",
+    "build": "bun run src/index.ts",
+    "types": "wrangler types",
+    "workflow:create": "wrangler workflows instances create EmailTriageWorkflow",
+    "workflow:list": "wrangler workflows instances list",
+    "workflow:status": "wrangler workflows instances get"
+  },
+  "dependencies": {},
+  "devDependencies": {
+    "typescript": "^5.9.2",
+    "wrangler": "^4.61.0"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "repository": {
+    "type": "git",
+    "url": "private-legal-repo-mobicycle"
+  },
+  "keywords": [
+    "legal",
+    "email-triage", 
+    "cloudflare-workflows",
+    "case-management",
+    "mobicycle-only"
+  ],
+  "author": "MobiCycle Technologies",
+  "license": "PRIVATE",
+  "private": true,
+  "workspaces": false
+}

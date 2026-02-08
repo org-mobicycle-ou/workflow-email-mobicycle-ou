@@ -109,8 +109,6 @@ const server = Bun.serve({
 				}
 
 				case '/health': {
-					const imapPort = process.env.IMAP_PORT || '1143';
-					const smtpPort = process.env.SMTP_PORT || '1025';
 					response = new Response(
 						JSON.stringify({
 							status: 'healthy',
@@ -120,13 +118,13 @@ const server = Bun.serve({
 							config: {
 								email: process.env.IMAP_USER || process.env.PROTON_EMAIL || null,
 								imapHost: process.env.IMAP_HOST || '127.0.0.1',
-								imapPort: imapPort,
+								imapPort: process.env.IMAP_PORT || '1143',
 								smtpHost: process.env.SMTP_HOST || '127.0.0.1',
-								smtpPort: smtpPort,
+								smtpPort: process.env.SMTP_PORT || '1025',
 							},
 							protonBridge: {
-								imap: `localhost:${imapPort}`,
-								smtp: `localhost:${smtpPort}`,
+								imap: 'localhost:1143',
+								smtp: 'localhost:1025',
 							},
 							timestamp: new Date().toISOString(),
 						}),
@@ -178,6 +176,6 @@ const server = Bun.serve({
 });
 
 console.log(`[EMAIL BACKEND] MobiCycle OÜ email-backend-service running on port ${PORT}`);
-console.log(`[EMAIL BACKEND] ProtonMail Bridge IMAP: localhost:${process.env.IMAP_PORT || '1143'}`);
-console.log(`[EMAIL BACKEND] ProtonMail Bridge SMTP: localhost:${process.env.SMTP_PORT || '1025'}`);
+console.log(`[EMAIL BACKEND] ProtonMail Bridge IMAP: localhost:1143`);
+console.log(`[EMAIL BACKEND] ProtonMail Bridge SMTP: localhost:1025`);
 console.log(`[EMAIL BACKEND] Tunnel: imap.mobicycle.ee -> localhost:${PORT}`);

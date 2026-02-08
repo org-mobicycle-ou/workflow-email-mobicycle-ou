@@ -5,6 +5,13 @@ name = "workflow-email"
 main = "src/index.ts"
 compatibility_date = "2025-12-23"
 
+# Cron Triggers - Multi-stage processing
+# Runs every 5 minutes with different job types based on time
+# Job types: monitoring (every 4 hours), fetching (every 10 min), sorting (offset +5), categorization (offset +8)
+# Total: 288 requests/day (well within 100k free tier)
+[triggers]
+crons = ["*/5 * * * *"]  # Every 5 minutes - job type determined by scheduled handler
+
 # CRITICAL: MobiCycle OÜ account ID only
 account_id = "2e4a7955aa124c38058cccd43902a8a5"
 
@@ -175,6 +182,11 @@ id = "4598ae69628a49e2a17e1e0b56ad77e7"
 [[kv_namespaces]]
 binding = "EMAIL_RECONSIDERATION_PD52B"
 id = "9caf10194efb4a4d8296ac730793960b"
+
+# Dashboard Snapshots
+[[kv_namespaces]]
+binding = "DASHBOARD_SCREENSHOTS"
+id = "5044d142a74345dfa45d48b9f1b84bcd"
 
 # R2 Buckets for Legal Documents
 [[r2_buckets]]

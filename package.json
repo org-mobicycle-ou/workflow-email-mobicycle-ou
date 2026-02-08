@@ -2,17 +2,26 @@
 	"name": "winter-bonus-e5fe",
 	"version": "0.0.0",
 	"private": true,
+	"type": "module",
 	"scripts": {
 		"deploy": "wrangler deploy",
 		"dev": "wrangler dev",
 		"start": "wrangler dev",
+		"backend": "bun run src/backend-server.ts",
+		"backend:dev": "bun --watch run src/backend-server.ts",
 		"test": "vitest",
 		"cf-typegen": "wrangler types"
 	},
+	"dependencies": {
+		"imapflow": "^1.0.171",
+		"nodemailer": "^6.9.16",
+		"mailparser": "^3.7.2"
+	},
 	"devDependencies": {
 		"@cloudflare/vitest-pool-workers": "^0.12.4",
+		"@types/nodemailer": "^6.4.17",
 		"typescript": "^5.5.2",
 		"vitest": "~3.2.0",
-		"wrangler": "^3.101.0"
+		"wrangler": "^4.63.0"
 	}
 }

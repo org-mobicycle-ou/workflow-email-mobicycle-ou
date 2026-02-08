@@ -1,24 +1,43 @@
-import { env, createExecutionContext, waitOnExecutionContext, SELF } from 'cloudflare:test';
 import { describe, it, expect } from 'vitest';
 import worker from '../src/index';
 
-// For now, you'll need to do something like this to get a correctly-typed
-// `Request` to pass to `worker.fetch()`.
-const IncomingRequest = Request<unknown, IncomingRequestCfProperties>;
-
-describe('Hello World worker', () => {
-	it('responds with Hello World! (unit style)', async () => {
-		const request = new IncomingRequest('http://example.com');
-		// Create an empty context to pass to `worker.fetch()`.
-		const ctx = createExecutionContext();
-		const response = await worker.fetch(request, env, ctx);
-		// Wait for all `Promise`s passed to `ctx.waitUntil()` to settle before running test assertions
-		await waitOnExecutionContext(ctx);
-		expect(await response.text()).toMatchInlineSnapshot(`"Hello World!"`);
+describe('Email triage worker', () => {
+	it('rejects non-POST requests', async () => {
+		const request = new Request('http://example.com', { method: 'GET' });
+		const response = await worker.fetch(request, { EMAIL_TRIAGE: {} } as any);
+		expect(response.status).toBe(405);
 	});
 
-	it('responds with Hello World! (integration style)', async () => {
-		const response = await SELF.fetch('https://example.com');
-		expect(await response.text()).toMatchInlineSnapshot(`"Hello World!"`);
+	it('creates a workflow instance on POST and forwards overrides', async () => {
+		let receivedParams: any = null;
+		const env = {
+			EMAIL_TRIAGE: {
+				create: async ({ params }: any) => {
+					receivedParams = params;
+					return { id: 'test-workflow-id' };
+				},
+			},
+		};
+
+		const request = new Request('http://example.com/cron/process-legal-emails', {
+			method: 'POST',
+			headers: { 'Content-Type': 'application/json' },
+			body: JSON.stringify({ mailbox: 'All Mail', limit: 123, unseenOnly: true }),
+		});
+
+		const response = await worker.fetch(request, env as any);
+		expect(response.status).toBe(200);
+
+		const data = await response.json();
+		expect(data).toMatchObject({
+			workflowId: 'test-workflow-id',
+			status: 'started',
+		});
+
+		expect(receivedParams).toMatchObject({
+			mailbox: 'All Mail',
+			limit: 123,
+			unseenOnly: true,
+		});
 	});
 });

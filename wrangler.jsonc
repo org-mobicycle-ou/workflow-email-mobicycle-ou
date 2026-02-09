@@ -1,0 +1,279 @@
+{
+  // Email Triage Workflow - MobiCycle Account ONLY
+  // DO NOT deploy to other accounts - contains legal privileged logic
+
+  "name": "workflow-email",
+  "main": "src/4_workflowEntrypoints/index.ts",
+  "compatibility_date": "2025-12-23",
+  "compatibility_flags": ["nodejs_compat"],
+
+  // Allow importing dashboard assets as plain text (e.g. `import html from '../1_dashboard/index.html'`)
+  "rules": [
+    { "type": "Text", "globs": ["**/*.html", "**/*.md", "**/*.css", "**/*.txt", "**/*.sql"], "fallthrough": false }
+  ],
+  
+  // Cron Triggers - Multi-stage processing
+  // Runs every 5 minutes with different job types based on time
+  // Job types: monitoring (every 4 hours), fetching (every 10 min), sorting (offset +5), categorization (offset +8)
+  // Total: 288 requests/day (well within 100k free tier)
+  "triggers": {
+    "crons": ["*/5 * * * *"]  // Every 5 minutes - job type determined by scheduled handler
+  },
+  
+  // CRITICAL: MobiCycle OÜ account ID only
+  "account_id": "2e4a7955aa124c38058cccd43902a8a5",
+  
+  // Workflow Configuration
+  "workflows": [{
+    "name": "email-triage",
+    "binding": "EMAIL_TRIAGE",
+    "class_name": "EmailTriageWorkflow",
+    "script_name": "workflow-email"
+  }],
+  
+  // MobiCycle-Specific Variables
+  "vars": {
+    "PROTON_EMAIL": "rose@mobicycle.ee",
+    "TUNNEL_URL": "https://imap.mobicycle.ee",
+    "CE_FILE_URL": "https://ce-file.mobicycle.com",
+    "NOTIFICATION_EMAIL": "rose@mobicycle.ee",
+    "CLAUDE_WEBHOOK": "https://claude-webhook.mobicycle.ee",
+    
+    // Legal-Specific Settings
+    "MAX_EMAILS_PER_BATCH": "5",  // Conservative for legal review
+    "APPROVAL_TIMEOUT_HOURS": "72",  // 3 days for legal review
+    "LEGAL_RETENTION_YEARS": "7",  // Legal document retention
+    "PRIVILEGED_COMMUNICATION": "true"
+  },
+  
+  // KV Namespaces for Email Categories (35 total)
+  "kv_namespaces": [
+    // Courts
+    {
+      "binding": "EMAIL_COURTS_SUPREME_COURT",
+      "id": "4272a9a3567b4827b3e6b07a9e0ec07b"
+    },
+    {
+      "binding": "EMAIL_COURTS_COURT_OF_APPEALS_CIVIL_DIVISION",
+      "id": "d730d43a0ff5452b9aa387fd6ab2640e"
+    },
+    {
+      "binding": "EMAIL_COURTS_KINGS_BENCH_APPEALS_DIVISION",
+      "id": "ab4eb2fdf4844dab802e5006c53fed91"
+    },
+    {
+      "binding": "EMAIL_COURTS_CHANCERY_DIVISION",
+      "id": "c0e294c679194bb2921f6faa83826d56"
+    },
+    {
+      "binding": "EMAIL_COURTS_ADMINISTRATIVE_COURT",
+      "id": "37c7b5e5e8a84e2a8e340cb0e1b39202"
+    },
+    {
+      "binding": "EMAIL_COURTS_CENTRAL_LONDON_COUNTY_COURT",
+      "id": "0dd9a961f8e54104a1c784fdd736d354"
+    },
+    {
+      "binding": "EMAIL_COURTS_CLERKENWELL_COUNTY_COURT",
+      "id": "450d57986f6b47bd8e6a9881d48b0222"
+    },
+    // Complaints
+    {
+      "binding": "EMAIL_COMPLAINTS_ICO",
+      "id": "e13127c545d646d8bbad29c8832193e7"
+    },
+    {
+      "binding": "EMAIL_COMPLAINTS_PHSO",
+      "id": "c336442195044b38b0b44fb6a7bc0c85"
+    },
+    {
+      "binding": "EMAIL_COMPLAINTS_PARLIAMENT",
+      "id": "dfff26c86d844c1eada2658f98cc5043"
+    },
+    {
+      "binding": "EMAIL_COMPLAINTS_HMCTS",
+      "id": "1f2e69dfa5db49959b5c8f98d87453d6"
+    },
+    {
+      "binding": "EMAIL_COMPLAINTS_BAR_STANDARDS_BOARD",
+      "id": "142319de0a894f6da1b35ebf457b910f"
+    },
+    // Legal Expenses
+    {
+      "binding": "EMAIL_EXPENSES_LEGAL_FEES_CLAIMANT",
+      "id": "e2138bc141724569bca4a006b370c94e"
+    },
+    {
+      "binding": "EMAIL_EXPENSES_LEGAL_FEES_COMPANY",
+      "id": "c439324554544228b5c722a27119f47e"
+    },
+    {
+      "binding": "EMAIL_EXPENSES_LEGAL_FEES_DIRECTOR",
+      "id": "226bdfd1f03e46e6a48ae5b77c00a264"
+    },
+    {
+      "binding": "EMAIL_EXPENSES_REPAIRS",
+      "id": "2155671bd23047bb917a7af169640691"
+    },
+    // Claimants
+    {
+      "binding": "EMAIL_CLAIMANT_HK_LAW",
+      "id": "6569a3d0c87b4ad897280e25695a7858"
+    },
+    {
+      "binding": "EMAIL_CLAIMANT_LESSEL",
+      "id": "f94de5c0cb584d8596fcfecf853f4213"
+    },
+    {
+      "binding": "EMAIL_CLAIMANT_LIU",
+      "id": "aac7e7e16f87490ba571aa9854c11e8c"
+    },
+    {
+      "binding": "EMAIL_CLAIMANT_RENTIFY",
+      "id": "61d3e5e7b3e94cfab6db2aca6d05869a"
+    },
+    // Defendants
+    {
+      "binding": "EMAIL_DEFENDANTS_DEFENDANT",
+      "id": "38a222851c034b6ab8c018fcbd5c4079"
+    },
+    {
+      "binding": "EMAIL_DEFENDANTS_BOTH_DEFENDANTS",
+      "id": "e1305af8eb8d44b28d6838e2516ae122"
+    },
+    {
+      "binding": "EMAIL_DEFENDANTS_BARRISTERS",
+      "id": "25c9d3da2ba6446883842413b3daa814"
+    },
+    {
+      "binding": "EMAIL_DEFENDANTS_LITIGANT_IN_PERSON_ONLY",
+      "id": "a71c5d09502e40b08522e1b5d7f0127c"
+    },
+    {
+      "binding": "EMAIL_DEFENDANTS_MOBICYCLE_OU_ONLY",
+      "id": "6ed1b38a555a4517bb272013b6140acb"
+    },
+    // Government
+    {
+      "binding": "EMAIL_GOVERNMENT_UK_LEGAL_DEPARTMENT",
+      "id": "da78dcd3387040478f852eccd7fa47eb"
+    },
+    {
+      "binding": "EMAIL_GOVERNMENT_ESTONIA",
+      "id": "e45e1cd170a04580828ac7f88c34c8f8"
+    },
+    {
+      "binding": "EMAIL_GOVERNMENT_US_STATE_DEPARTMENT",
+      "id": "36b5178e1c83446faab3953bc49da196"
+    },
+    // Reconsideration
+    {
+      "binding": "EMAIL_RECONSIDERATION_SINGLE_JUDGE",
+      "id": "300bb71748194533bd1b25288263aeba"
+    },
+    {
+      "binding": "EMAIL_RECONSIDERATION_COURT_OFFICER_REVIEW",
+      "id": "513fc3d8c841423d853123e0c6cdfb80"
+    },
+    {
+      "binding": "EMAIL_RECONSIDERATION_PTA_REFUSAL",
+      "id": "e2b36cf5a9a8422ca589af783cfaf37c"
+    },
+    {
+      "binding": "EMAIL_RECONSIDERATION_CPR52_24_5",
+      "id": "a3393dce32fb4ae69464697e9fd215f0"
+    },
+    {
+      "binding": "EMAIL_RECONSIDERATION_CPR52_24_6",
+      "id": "3117bed7263743ab901115e7a0b5a803"
+    },
+    {
+      "binding": "EMAIL_RECONSIDERATION_CPR52_30",
+      "id": "4598ae69628a49e2a17e1e0b56ad77e7"
+    },
+    {
+      "binding": "EMAIL_RECONSIDERATION_PD52B",
+      "id": "9caf10194efb4a4d8296ac730793960b"
+    },
+    // Raw Email Data
+    {
+      "binding": "RAW_DATA_HEADERS",
+      "id": "7a8b9c1d2e3f4g5h6i7j8k9l0m1n2o3p"
+    },
+    // Filtered Email Data
+    {
+      "binding": "FILTERED_DATA_HEADERS",
+      "id": "8b9c0d1e2f3g4h5i6j7k8l9m0n1o2p3q"
+    },
+    // Dashboard Snapshots
+    {
+      "binding": "DASHBOARD_SCREENSHOTS",
+      "id": "5044d142a74345dfa45d48b9f1b84bcd"
+    }
+  ],
+  
+  // R2 Buckets for Legal Documents
+  "r2_buckets": [
+    {
+      "binding": "LEGAL_DOCUMENTS",
+      "bucket_name": "legal-documents-mobicycle"
+    },
+    {
+      "binding": "CASE_ATTACHMENTS",
+      "bucket_name": "case-attachments-mobicycle"
+    }
+  ],
+  
+  // Durable Objects for Case State Management
+  "migrations": [
+    {
+      "tag": "v1",
+      "new_classes": ["LegalCaseManager"]
+    },
+    {
+      "tag": "v2",
+      "deleted_classes": ["LegalCaseManager"]
+    }
+  ],
+  
+  // Queue for Legal Processing
+  "queues": {
+    "producers": [{
+      "binding": "LEGAL_PROCESSING_QUEUE",
+      "queue": "legal-processing-mobicycle"
+    }]
+  },
+  
+  // AI Configuration for Legal Analysis
+  "ai": {
+    "binding": "AI"
+  },
+  
+  // Secrets (use: wrangler secret put SECRET_NAME)
+  // CE_FILE_API_KEY
+  // LEGAL_SYSTEM_CREDENTIALS
+  // COURT_API_TOKENS
+  // CLAUDE_MCP_TOKEN
+  
+  // Development Environment
+  "env": {
+    "development": {
+      "name": "workflow-email-dev",
+      "vars": {
+        "TUNNEL_URL": "http://localhost:4000",
+        "CE_FILE_URL": "https://dev.ce-file.mobicycle.com",
+        "APPROVAL_TIMEOUT_HOURS": "1"
+      }
+    },
+    
+    // Production Environment
+    "production": {
+      "name": "workflow-email-prod",
+      "vars": {
+        "TUNNEL_URL": "https://imap.mobicycle.ee",
+        "CE_FILE_URL": "https://ce-file.mobicycle.com",
+        "APPROVAL_TIMEOUT_HOURS": "72"
+      }
+    }
+  }
+}

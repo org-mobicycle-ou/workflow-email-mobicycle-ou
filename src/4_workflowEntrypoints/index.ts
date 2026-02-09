@@ -6,6 +6,134 @@
 // import { MobicycleOUWorkflow } from './MobicycleOUWorkflow';
 // import { MobicycleOUEnv } from './MobicycleOUConfig';
 import dashboardHtml from '../1_dashboard/index.html';
+import { generateEmailWhitelist, isEmailWhitelisted, getKVNamespaceForEmail } from './universal/emails/whitelist-engine';
+
+// Email formatting functions based on format-key.sh and format-value.sh
+function formatEmailKey(from: string, date: string): string {
+	// Parse date: 2026-02-09T10:30:45Z
+	const year = date.split('-')[0];
+	const month = date.split('-')[1];
+	const day = date.split('T')[0].split('-')[2];
+	const time = date.split('T')[1].split('Z')[0];
+	const hours = time.split(':')[0];
+	const minutes = time.split(':')[1];
+	const seconds = time.split(':')[2];
+	
+	// Sanitize sender: casework@ico.org.uk → casework_ico_org_uk
+	const sender = from.replace(/[@.]/g, '_');
+	
+	// Generate key: 2026.09.02_casework_ico_org_uk_10-30-45
+	return `${year}.${day}.${month}_${sender}_${hours}-${minutes}-${seconds}`;
+}
+
+function formatEmailValue(from: string, to: string, subject: string, date: string, messageId: string, body: string = '', namespace: string = 'UNCLASSIFIED'): any {
+	return {
+		from,
+		to,
+		subject,
+		body,
+		date,
+		messageId,
+		namespace,
+		storedAt: new Date().toISOString(),
+		status: 'pending'
+	};
+}
+
+// Email fetching job with proper formatting and whitelist engine
+async function executeEmailFetchingJob(env: MobicycleOUEnv): Promise<void> {
+	console.log('[CRON:FETCHING] Starting email fetch job...');
+	
+	try {
+		// Step 1: Fetch emails from ProtonMail Bridge via backend
+		const imapResponse = await fetch(`${env.TUNNEL_URL}/fetch-emails`, {
+			method: 'POST',
+			headers: {
+				'Content-Type': 'application/json'
+			},
+			body: JSON.stringify({
+				account: env.PROTON_EMAIL,
+				folder: 'All Mail',
+				limit: 50
+			}),
+			signal: AbortSignal.timeout(15000)
+		});
+
+		if (!imapResponse.ok) {
+			throw new Error(`Backend returned ${imapResponse.status}`);
+		}
+
+		const data = await imapResponse.json();
+		const emails = data.emails || [];
+		
+		console.log(`[CRON:FETCHING] Fetched ${emails.length} emails`);
+
+		// Step 2: Save raw emails to RAW_DATA_HEADERS with proper formatting
+		for (const email of emails) {
+			const emailKey = formatEmailKey(email.from || '', email.date || new Date().toISOString());
+			const emailValue = formatEmailValue(
+				email.from || '',
+				email.to || '',
+				email.subject || '',
+				email.date || new Date().toISOString(),
+				email.messageId || '',
+				email.body || '',
+				'RAW'
+			);
+			
+			await env.RAW_DATA_HEADERS.put(emailKey, JSON.stringify(emailValue));
+		}
+
+		// Step 3: Filter emails using whitelist engine and save to FILTERED_DATA_HEADERS
+		// TODO: Load actual classification rules - for now use basic legal domains
+		const mockWhitelist = {
+			addresses: [
+				{ pattern: '.court', type: 'pattern', categories: ['courts'], tags: { legalType: ['litigation'], jurisdiction: ['UK'], institution: ['court'], priority: 'high', kvNamespace: ['EMAIL_COURTS_ADMINISTRATIVE_COURT'] } },
+				{ pattern: '.gov.uk', type: 'pattern', categories: ['government'], tags: { legalType: ['administrative'], jurisdiction: ['UK'], institution: ['government'], priority: 'high', kvNamespace: ['EMAIL_GOVERNMENT_UK_LEGAL_DEPARTMENT'] } },
+				{ pattern: '@ico.org.uk', type: 'exact', categories: ['complaints'], tags: { legalType: ['regulatory'], jurisdiction: ['UK'], institution: ['ombudsman'], priority: 'high', kvNamespace: ['EMAIL_COMPLAINTS_ICO'] } }
+			],
+			domains: [],
+			patterns: [],
+			lastUpdated: new Date().toISOString()
+		};
+
+		let filteredCount = 0;
+		for (const email of emails) {
+			const whitelistResult = isEmailWhitelisted(email.from || '', mockWhitelist);
+			
+			if (whitelistResult.allowed) {
+				const emailKey = formatEmailKey(email.from || '', email.date || new Date().toISOString());
+				const emailValue = formatEmailValue(
+					email.from || '',
+					email.to || '',
+					email.subject || '',
+					email.date || new Date().toISOString(),
+					email.messageId || '',
+					email.body || '',
+					whitelistResult.categories?.[0] || 'FILTERED'
+				);
+				
+				await env.FILTERED_DATA_HEADERS.put(emailKey, JSON.stringify(emailValue));
+				filteredCount++;
+				
+				// Step 4: Categorize into specific KV namespaces
+				if (whitelistResult.tags?.kvNamespace?.[0]) {
+					const kvBinding = whitelistResult.tags.kvNamespace[0];
+					const namespace = (env as any)[kvBinding];
+					if (namespace) {
+						await namespace.put(emailKey, JSON.stringify(emailValue));
+					}
+				}
+			}
+		}
+
+		console.log(`[CRON:FETCHING] Processed ${emails.length} emails, ${filteredCount} passed whitelist`);
+
+	} catch (error) {
+		console.error('[CRON:FETCHING] Error:', error);
+		throw error;
+	}
+}
 
 // Environment type definitions with all KV namespace bindings
 type MobicycleOUEnv = {
@@ -911,8 +1039,10 @@ export default {
 					message: `CRON job ${jobType} is currently executing`
 				}));
 
-				// TODO: Actual job logic would go here
-				// For now, just mark as completed immediately
+				// Execute actual job logic
+				if (jobType === 'fetching') {
+					await executeEmailFetchingJob(env);
+				}
 
 				// Store completed status
 				await kvNamespace.put(`cron_${jobType}_status`, JSON.stringify({

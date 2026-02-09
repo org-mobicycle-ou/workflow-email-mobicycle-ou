@@ -198,12 +198,12 @@
     // Raw Email Data
     {
       "binding": "RAW_DATA_HEADERS",
-      "id": "7a8b9c1d2e3f4g5h6i7j8k9l0m1n2o3p"
+      "id": "0db2d2e6ffa448d9984659315b95f4ac"
     },
     // Filtered Email Data
     {
       "binding": "FILTERED_DATA_HEADERS",
-      "id": "8b9c0d1e2f3g4h5i6j7k8l9m0n1o2p3q"
+      "id": "d1406ff6574f4afca950d46ea9bb0a38"
     },
     // Dashboard Snapshots
     {

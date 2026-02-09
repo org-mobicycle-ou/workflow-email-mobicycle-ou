@@ -611,7 +611,7 @@ export default {
 				}
 
 				// Fallback: count from todo list if bridge fails
-				const todoListJson = await env.DASHBOARD_SCREENSHOTS.get('email_todo_list');
+				const todoListJson = await env.DASHBOARD_SCREENSHOTS.get('pending_triage');
 				const todoList = todoListJson ? JSON.parse(todoListJson) : [];
 
 				return new Response(JSON.stringify({ total: todoList.length }), {
@@ -765,244 +765,73 @@ export default {
 			});
 		}
 
-		// Trigger Phase 1 route
-		if (request.method === 'POST' && url.pathname === '/trigger-phase1') {
+		// KV namespace contents route
+		if (url.pathname.startsWith('/api/kv-emails/')) {
 			if (!authorized) {
 				return new Response('Unauthorized', { status: 401 });
 			}
 
-			try {
-				const kvNamespace = env.DASHBOARD_SCREENSHOTS;
-				const legalDomains = ['.court', '.gov.uk', '.ee', '@ico.org.uk', '@hklaw.com', '@lessel.co.uk'];
+			const namespaceName = url.pathname.split('/api/kv-emails/')[1];
+			const limit = parseInt(url.searchParams.get('limit') || '10');
 
-				// Step 1: Fetch emails from ProtonMail Bridge
-				await kvNamespace.put('phase1_step1_status', JSON.stringify({
-					status: 'running',
-					timestamp: new Date().toISOString()
-				}));
+			// Map namespace names to actual KV bindings
+			const namespaceMap = {
+				'administrative-court': env.EMAIL_COURTS_ADMINISTRATIVE_COURT,
+				'supreme-court': env.EMAIL_COURTS_SUPREME_COURT,
+				'court-of-appeals': env.EMAIL_COURTS_COURT_OF_APPEALS_CIVIL_DIVISION,
+				'chancery-division': env.EMAIL_COURTS_CHANCERY_DIVISION,
+				'ico': env.EMAIL_COMPLAINTS_ICO,
+				'phso': env.EMAIL_COMPLAINTS_PHSO,
+				'parliament': env.EMAIL_COMPLAINTS_PARLIAMENT,
+				'uk-legal': env.EMAIL_GOVERNMENT_UK_LEGAL_DEPARTMENT,
+				'estonia': env.EMAIL_GOVERNMENT_ESTONIA,
+				'hk-law': env.EMAIL_CLAIMANT_HK_LAW,
+				'defendant': env.EMAIL_DEFENDANTS_DEFENDANT,
+				'raw-data': env.RAW_DATA_HEADERS,
+				'filtered-data': env.FILTERED_DATA_HEADERS,
+				'pending-triage': env.DASHBOARD_SCREENSHOTS
+			};
 
-				let emails = [];
-				try {
-					const imapResponse = await fetch(`${env.TUNNEL_URL}/fetch-emails`, {
-						method: 'POST',
-						headers: {
-							'Content-Type': 'application/json'
-						},
-						body: JSON.stringify({
-							account: env.PROTON_EMAIL,
-							folder: 'All Mail',
-							limit: 50
-						}),
-						signal: AbortSignal.timeout(15000)
-					});
-
-					if (imapResponse.ok) {
-						const data = await imapResponse.json();
-						emails = data.emails || [];
-					} else {
-						throw new Error(`Bridge returned ${imapResponse.status}`);
-					}
-				} catch (fetchError) {
-					throw new Error(`Failed to fetch emails: ${fetchError.message}`);
-				}
-
-				// Save raw email data with headers immediately after retrieval
-				for (const email of emails) {
-					const emailId = email.id || `email_${Date.now()}_${Math.random()}`;
-					await env.RAW_DATA_HEADERS.put(emailId, JSON.stringify({
-						...email,
-						retrievedAt: new Date().toISOString(),
-						source: 'ProtonMail Bridge',
-						account: env.PROTON_EMAIL
-					}));
-				}
-
-				await kvNamespace.put('phase1_step1_status', JSON.stringify({
-					status: 'success',
-					emailsFetched: emails.length,
-					emailsSavedToRaw: emails.length,
-					message: `Fetched ${emails.length} emails from ProtonMail Bridge and saved to RAW_DATA_HEADERS`,
-					timestamp: new Date().toISOString()
-				}));
-
-				// Step 2: Filter for relevant emails (legal domains)
-				await kvNamespace.put('phase1_step2_status', JSON.stringify({
-					status: 'running',
-					timestamp: new Date().toISOString()
-				}));
-
-				const relevantEmails = emails.filter(email => {
-					const from = (email.from || '').toLowerCase();
-					return legalDomains.some(domain => from.includes(domain));
-				});
-
-				// Save filtered emails to FILTERED_DATA_HEADERS
-				for (const email of relevantEmails) {
-					const emailId = email.id || `filtered_email_${Date.now()}_${Math.random()}`;
-					await env.FILTERED_DATA_HEADERS.put(emailId, JSON.stringify({
-						...email,
-						filteredAt: new Date().toISOString(),
-						filterCriteria: 'Legal domains',
-						matchedDomains: legalDomains.filter(domain => 
-							(email.from || '').toLowerCase().includes(domain)
-						)
-					}));
-				}
-
-				await kvNamespace.put('phase1_step2_status', JSON.stringify({
-					status: 'success',
-					totalEmails: emails.length,
-					emailsFiltered: relevantEmails.length,
-					emailsSavedToFiltered: relevantEmails.length,
-					message: `Filtered ${relevantEmails.length} relevant from ${emails.length} total and saved to FILTERED_DATA_HEADERS`,
-					timestamp: new Date().toISOString()
-				}));
-
-				// Step 3: Remove self-sent emails
-				await kvNamespace.put('phase1_step3_status', JSON.stringify({
-					status: 'running',
-					timestamp: new Date().toISOString()
-				}));
-
-				const selfEmail = env.PROTON_EMAIL.toLowerCase();
-				const externalEmails = relevantEmails.filter(email => {
-					const from = (email.from || '').toLowerCase();
-					return !from.includes(selfEmail);
-				});
-
-				const removedCount = relevantEmails.length - externalEmails.length;
-
-				await kvNamespace.put('phase1_step3_status', JSON.stringify({
-					status: 'success',
-					selfSentRemoved: removedCount,
-					remainingEmails: externalEmails.length,
-					message: `Removed ${removedCount} self-sent, ${externalEmails.length} remaining`,
-					timestamp: new Date().toISOString()
-				}));
-
-				// Step 3.5: Categorize emails into appropriate KV namespaces
-				await kvNamespace.put('phase1_step3_5_status', JSON.stringify({
-					status: 'running',
-					timestamp: new Date().toISOString()
-				}));
-
-				const categorizedCount = {
-					courts: 0,
-					complaints: 0,
-					government: 0,
-					claimants: 0,
-					defendants: 0,
-					expenses: 0,
-					reconsideration: 0
-				};
-
-				for (const email of externalEmails) {
-					const from = (email.from || '').toLowerCase();
-					const subject = (email.subject || '').toLowerCase();
-					const emailId = email.id || `categorized_email_${Date.now()}_${Math.random()}`;
-					
-					// Courts
-					if (from.includes('court') || from.includes('judiciary') || subject.includes('court')) {
-						await env.EMAIL_COURTS_SUPREME_COURT.put(emailId, JSON.stringify(email));
-						categorizedCount.courts++;
-					}
-					// ICO/Complaints
-					else if (from.includes('ico.org.uk') || from.includes('phso') || from.includes('parliament')) {
-						await env.EMAIL_COMPLAINTS_ICO.put(emailId, JSON.stringify(email));
-						categorizedCount.complaints++;
-					}
-					// Government
-					else if (from.includes('gov.uk') || from.includes('.ee')) {
-						await env.EMAIL_GOVERNMENT_UK_LEGAL_DEPARTMENT.put(emailId, JSON.stringify(email));
-						categorizedCount.government++;
-					}
-					// Claimants (law firms)
-					else if (from.includes('hklaw.com') || from.includes('lessel') || from.includes('law')) {
-						await env.EMAIL_CLAIMANT_HK_LAW.put(emailId, JSON.stringify(email));
-						categorizedCount.claimants++;
-					}
-					// Default to defendants
-					else {
-						await env.EMAIL_DEFENDANTS_DEFENDANT.put(emailId, JSON.stringify(email));
-						categorizedCount.defendants++;
-					}
-				}
-
-				await kvNamespace.put('phase1_step3_5_status', JSON.stringify({
-					status: 'success',
-					emailsCategorized: externalEmails.length,
-					categories: categorizedCount,
-					message: `Categorized ${externalEmails.length} emails into legal namespaces`,
-					timestamp: new Date().toISOString()
-				}));
-
-				// Step 4: Update todo list
-				await kvNamespace.put('phase1_step4_status', JSON.stringify({
-					status: 'running',
-					timestamp: new Date().toISOString()
-				}));
-
-				const todoItems = externalEmails.map(email => ({
-					id: email.id || `email_${Date.now()}_${Math.random()}`,
-					subject: email.subject || '(No subject)',
-					from: email.from || 'Unknown sender',
-					receivedAt: email.date || new Date().toISOString(),
-					status: 'pending',
-					addedAt: new Date().toISOString()
-				}));
-
-				await kvNamespace.put('email_todo_list', JSON.stringify(todoItems));
-
-				await kvNamespace.put('phase1_step4_status', JSON.stringify({
-					status: 'success',
-					todoItemsAdded: todoItems.length,
-					message: `Added ${todoItems.length} emails to todo list`,
-					timestamp: new Date().toISOString()
-				}));
-
-				// Step 5: Send notifications
-				await kvNamespace.put('phase1_step5_status', JSON.stringify({
-					status: 'running',
-					timestamp: new Date().toISOString()
-				}));
-
-				const notifications = [];
-
-				// Send to Claude webhook
-				if (env.CLAUDE_WEBHOOK && externalEmails.length > 0) {
-					notifications.push(
-						fetch(env.CLAUDE_WEBHOOK, {
-							method: 'POST',
-							headers: { 'Content-Type': 'application/json' },
-							body: JSON.stringify({
-								type: 'new_legal_emails',
-								count: externalEmails.length,
-								emails: todoItems,
-								timestamp: new Date().toISOString()
-							})
-						}).catch(() => null)
-					);
-				}
-
-				await Promise.all(notifications);
-
-				await kvNamespace.put('phase1_step5_status', JSON.stringify({
-					status: 'success',
-					notificationsSent: notifications.length,
-					message: `Sent ${notifications.length} notifications`,
-					timestamp: new Date().toISOString()
-				}));
-
-				return new Response(JSON.stringify({
-					message: 'Phase 1 completed successfully',
-					emailsProcessed: externalEmails.length,
-					timestamp: new Date().toISOString()
-				}), {
+			const namespace = namespaceMap[namespaceName];
+			if (!namespace) {
+				return new Response(JSON.stringify({ error: 'Namespace not found' }), {
+					status: 404,
 					headers: { 'Content-Type': 'application/json' }
 				});
+			}
+
+			try {
+				let emails = [];
+				
+				if (namespaceName === 'pending-triage') {
+					// Special handling for pending triage
+					const todoData = await namespace.get('pending_triage');
+					emails = todoData ? [JSON.parse(todoData)] : [];
+				} else {
+					// List keys and get email data
+					const keysList = await namespace.list({ limit });
+					for (const key of keysList.keys) {
+						const emailData = await namespace.get(key.name);
+						if (emailData) {
+							emails.push({
+								key: key.name,
+								data: JSON.parse(emailData)
+							});
+						}
+					}
+				}
+
+				return new Response(JSON.stringify({
+					namespace: namespaceName,
+					count: emails.length,
+					emails: emails
+				}, null, 2), {
+					headers: { 'Content-Type': 'application/json' }
+				});
+
 			} catch (error) {
 				return new Response(JSON.stringify({
-					error: 'Phase 1 execution failed',
+					error: 'Failed to retrieve emails',
 					message: error.message
 				}), {
 					status: 500,
@@ -1010,6 +839,7 @@ export default {
 				});
 			}
 		}
+
 
 		// Trigger route
 		if (request.method === 'POST' && url.pathname === '/trigger') {

@@ -1,22 +1,38 @@
+#!/usr/bin/env bun
+
 /**
- * Email Backend Service - MobiCycle OÜ
- * ------------------------------------
- * Local HTTP service on port 4000 that bridges ProtonMail Bridge to Cloudflare Workers.
- * Accessed via Cloudflare Tunnel at imap.mobicycle.ee
- *
- * ProtonMail Bridge runs locally:
- *   - IMAP: localhost:1143
- *   - SMTP: localhost:1025
- *
- * CRITICAL: This service is ONLY for the MobiCycle OÜ account.
- * Each Cloudflare account has its own dedicated backend service.
+ * ProtonMail Bridge Backend Server for rose@mobicycle.ee
+ * Exposes HTTP API for Cloudflare Worker to fetch emails via tunnel
  */
 
-import { fetchEmails, getEmailCount, listMailboxes, type FetchEmailsRequest } from './imap-client';
-import { sendEmail, type SendEmailRequest } from './smtp-client';
+import { ImapFlow } from 'imapflow';
 
 const PORT = 4000;
-const ACCOUNT = 'mobicycle-ou';
+
+// ProtonMail Bridge IMAP settings for rose@mobicycle.ee
+const IMAP_CONFIG = {
+	host: '127.0.0.1',
+	port: 1143,
+	secure: false,
+	auth: {
+		user: 'rose@mobicycle.ee',
+		pass: 'yeMDbia0cJ45IWvsphn4fA',
+	},
+	tls: {
+		rejectUnauthorized: false,
+	},
+	logger: false,
+};
+
+interface Email {
+	id: string;
+	from: string;
+	to: string;
+	subject: string;
+	body: string;
+	date: string;
+	messageId: string;
+}
 
 const server = Bun.serve({
 	port: PORT,
@@ -36,146 +52,144 @@ const server = Bun.serve({
 		}
 
 		try {
-			let response: Response;
-
-			switch (path) {
-				case '/fetch-emails': {
-					if (request.method !== 'POST') {
-						return new Response('Method not allowed', { status: 405, headers: corsHeaders });
-					}
-					const body = (await request.json()) as FetchEmailsRequest;
-					const emails = await fetchEmails(body);
-					response = new Response(
-						JSON.stringify({
-							success: true,
-							count: emails.length,
-							emails,
-						}),
-						{
-						headers: { 'Content-Type': 'application/json', ...corsHeaders },
-						}
-					);
-					break;
-				}
-
-				case '/send-email': {
-					if (request.method !== 'POST') {
-						return new Response('Method not allowed', { status: 405, headers: corsHeaders });
-					}
-					const body = (await request.json()) as SendEmailRequest;
-					const result = await sendEmail(body);
-					response = new Response(JSON.stringify(result), {
-						headers: { 'Content-Type': 'application/json', ...corsHeaders },
-					});
-					break;
-				}
-
-				case '/mailboxes': {
-					if (request.method !== 'GET') {
-						return new Response('Method not allowed', { status: 405, headers: corsHeaders });
-					}
-					const mailboxes = await listMailboxes();
-					response = new Response(
-						JSON.stringify({
-							success: true,
-							count: mailboxes.length,
-							mailboxes,
-							timestamp: new Date().toISOString(),
-						}),
-						{
-							headers: { 'Content-Type': 'application/json', ...corsHeaders },
-						}
-					);
-					break;
-				}
-
-				case '/email-count': {
-					if (request.method !== 'GET') {
-						return new Response('Method not allowed', { status: 405, headers: corsHeaders });
-					}
-					const mailbox = url.searchParams.get('mailbox') || 'INBOX';
-					const count = await getEmailCount(mailbox);
-					response = new Response(
-						JSON.stringify({
-							mailbox,
-							totalCount: count,
-							timestamp: new Date().toISOString(),
-						}),
-						{
-							headers: { 'Content-Type': 'application/json', ...corsHeaders },
-						}
-					);
-					break;
-				}
-
-				case '/health': {
-					response = new Response(
-						JSON.stringify({
-							status: 'healthy',
-							service: 'email-backend-service',
-							account: ACCOUNT,
-							port: PORT,
-							config: {
-								email: process.env.IMAP_USER || process.env.PROTON_EMAIL || null,
-								imapHost: process.env.IMAP_HOST || '127.0.0.1',
-								imapPort: process.env.IMAP_PORT || '1143',
-								smtpHost: process.env.SMTP_HOST || '127.0.0.1',
-								smtpPort: process.env.SMTP_PORT || '1025',
-							},
-							protonBridge: {
-								imap: 'localhost:1143',
-								smtp: 'localhost:1025',
-							},
-							timestamp: new Date().toISOString(),
-						}),
-						{
-							headers: { 'Content-Type': 'application/json', ...corsHeaders },
-						}
-					);
-					break;
-				}
-
-				case '/': {
-					response = new Response(
-						JSON.stringify({
-							service: 'MobiCycle OÜ Email Backend Service',
-							account: ACCOUNT,
-							port: PORT,
-							description: 'Bridges ProtonMail Bridge IMAP/SMTP to HTTP for Cloudflare Workers',
-							endpoints: ['/fetch-emails', '/send-email', '/email-count', '/health'],
-							tunnel: 'imap.mobicycle.ee',
-							timestamp: new Date().toISOString(),
-						}),
-						{
-							headers: { 'Content-Type': 'application/json', ...corsHeaders },
-						}
-					);
-					break;
-				}
-
-				default:
-					response = new Response('Not Found', { status: 404, headers: corsHeaders });
+			// Health check endpoint
+			if (path === '/health') {
+				return new Response(JSON.stringify({
+					status: 'ok',
+					service: 'ProtonMail Bridge Backend',
+					account: 'rose@mobicycle.ee',
+					config: {
+						email: IMAP_CONFIG.auth.user,
+						bridge: `${IMAP_CONFIG.host}:${IMAP_CONFIG.port}`,
+					},
+					timestamp: new Date().toISOString(),
+				}), {
+					headers: { 'Content-Type': 'application/json', ...corsHeaders },
+				});
 			}
 
-			return response;
-		} catch (error: any) {
-			console.error(`[EMAIL BACKEND] Error on ${path}:`, error);
-			return new Response(
-				JSON.stringify({
-					error: 'Internal server error',
-					message: error.message,
-					timestamp: new Date().toISOString(),
-				}),
-				{
-					status: 500,
-					headers: { 'Content-Type': 'application/json', ...corsHeaders },
+			// Fetch emails endpoint (used by Cloudflare Worker)
+			if (path === '/fetch-emails' && request.method === 'POST') {
+				const body = await request.json() as {
+					account?: string;
+					folder?: string;
+					limit?: number;
+					unseenOnly?: boolean;
+				};
+
+				const folder = body.folder || 'INBOX';
+				const limit = body.limit || 50;
+				const unseenOnly = body.unseenOnly || false;
+
+				console.log(`Fetching emails: folder=${folder}, limit=${limit}, unseenOnly=${unseenOnly}`);
+
+				const client = new ImapFlow(IMAP_CONFIG);
+				await client.connect();
+
+				const lock = await client.getMailboxLock(folder);
+				const emails: Email[] = [];
+
+				try {
+					// Search criteria
+					const searchCriteria = unseenOnly ? { seen: false } : { all: true };
+					const messages = await client.search(searchCriteria);
+
+					// Limit results
+					const messageIds = messages.slice(-limit);
+
+					if (messageIds.length === 0) {
+						return new Response(JSON.stringify({
+							success: true,
+							count: 0,
+							emails: [],
+						}), {
+							headers: { 'Content-Type': 'application/json', ...corsHeaders },
+						});
+					}
+
+					// Fetch email details
+					for await (const msg of client.fetch(messageIds, {
+						envelope: true,
+						bodyStructure: true,
+						source: true,
+					})) {
+						const from = msg.envelope?.from?.[0]?.address || 'unknown';
+						const to = msg.envelope?.to?.[0]?.address || 'unknown';
+						const subject = msg.envelope?.subject || '(no subject)';
+						const date = msg.envelope?.date || new Date();
+						const messageId = msg.envelope?.messageId || `${msg.uid}`;
+
+						// Get email body (text or html)
+						let body = '';
+						if (msg.source) {
+							const text = msg.source.toString();
+							// Simple extraction - just get first 500 chars after headers
+							const bodyStart = text.indexOf('\r\n\r\n');
+							if (bodyStart > 0) {
+								body = text.substring(bodyStart + 4, bodyStart + 504);
+							}
+						}
+
+						emails.push({
+							id: `${msg.uid}`,
+							from,
+							to,
+							subject,
+							body: body.trim(),
+							date: date.toISOString(),
+							messageId,
+						});
+					}
+				} finally {
+					lock.release();
 				}
-			);
+
+				await client.logout();
+
+				return new Response(JSON.stringify({
+					success: true,
+					count: emails.length,
+					emails,
+				}), {
+					headers: { 'Content-Type': 'application/json', ...corsHeaders },
+				});
+			}
+
+			// Root endpoint - API info
+			if (path === '/') {
+				return new Response(JSON.stringify({
+					service: 'ProtonMail Bridge Backend API',
+					account: 'rose@mobicycle.ee',
+					version: '1.0.0',
+					endpoints: {
+						health: 'GET /health',
+						fetchEmails: 'POST /fetch-emails',
+					},
+					tunnel: 'https://imap.mobicycle.ee',
+				}), {
+					headers: { 'Content-Type': 'application/json', ...corsHeaders },
+				});
+			}
+
+			return new Response('Not Found', { status: 404, headers: corsHeaders });
+
+		} catch (error) {
+			console.error('Error:', error);
+			return new Response(JSON.stringify({
+				success: false,
+				error: error instanceof Error ? error.message : 'Unknown error',
+			}), {
+				status: 500,
+				headers: { 'Content-Type': 'application/json', ...corsHeaders },
+			});
 		}
 	},
 });
 
-console.log(`[EMAIL BACKEND] MobiCycle OÜ email-backend-service running on port ${PORT}`);
-console.log(`[EMAIL BACKEND] ProtonMail Bridge IMAP: localhost:1143`);
-console.log(`[EMAIL BACKEND] ProtonMail Bridge SMTP: localhost:1025`);
-console.log(`[EMAIL BACKEND] Tunnel: imap.mobicycle.ee -> localhost:${PORT}`);
+console.log(`🚀 ProtonMail Bridge Backend running on http://localhost:${PORT}`);
+console.log(`📧 Account: ${IMAP_CONFIG.auth.user}`);
+console.log(`🌉 Bridge: ${IMAP_CONFIG.host}:${IMAP_CONFIG.port}`);
+console.log(`🔗 Tunnel: https://imap.mobicycle.ee`);
+console.log('\nEndpoints:');
+console.log('  GET  /health');
+console.log('  POST /fetch-emails');

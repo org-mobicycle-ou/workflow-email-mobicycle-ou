@@ -5,7 +5,7 @@
 
 // import { MobicycleOUWorkflow } from './MobicycleOUWorkflow';
 // import { MobicycleOUEnv } from './MobicycleOUConfig';
-import dashboardHtml from '../1_dashboard/index.html';
+import dashboardHtml from '../1_frontend/index.html';
 import { generateEmailWhitelist, isEmailWhitelisted, getKVNamespaceForEmail } from './universal/emails/whitelist-engine';
 
 // Email formatting functions based on format-key.sh and format-value.sh

@@ -1,1819 +1,232 @@
 <!DOCTYPE html>
-<html lang="en" class="h-full antialiased">
+<html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>MobiCycle OÜ Email Workflow Dashboard</title>
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Lexend:wght@600;700&display=swap" rel="stylesheet">
     <script src="https://cdn.tailwindcss.com"></script>
-    <script>
-        tailwind.config = {
-            theme: {
-                extend: {
-                    fontFamily: {
-                        sans: ['Inter', 'system-ui', 'sans-serif'],
-                        display: ['Lexend', 'system-ui', 'sans-serif'],
-                    },
-                }
-            }
-        }
-    </script>
-    <style>
-        body {
-            font-family: 'Inter', system-ui, sans-serif;
-        }
-    </style>
 </head>
-<body class="flex min-h-full bg-white">
-    <div class="flex w-full flex-col">
+<body class="bg-gray-50">
+    <div class="min-h-screen">
         <!-- Header -->
-        <header class="sticky top-0 z-50 flex flex-none flex-wrap items-center justify-between bg-white px-4 py-5 shadow-md shadow-slate-900/5 sm:px-6 lg:px-8">
-            <div class="relative flex grow basis-0 items-center">
-                <h1 class="text-2xl font-semibold text-slate-900">⚖️ MobiCycle OÜ Legal Email Workflow</h1>
+        <header class="bg-white shadow">
+            <div class="mx-auto max-w-7xl px-4 py-6 sm:px-6 lg:px-8">
+                <h1 class="text-3xl font-bold tracking-tight text-gray-900">MobiCycle OÜ Email Workflow Dashboard</h1>
+                <p class="text-gray-600 mt-2">rose@mobicycle.ee | ProtonMail Bridge → Backend → Cloudflare Worker → KV Storage</p>
             </div>
         </header>
 
-        <!-- Main Content -->
-        <div class="relative mx-auto flex w-full max-w-8xl flex-auto justify-center sm:px-2 lg:px-8 xl:px-12">
-            <div class="min-w-0 max-w-2xl flex-auto px-4 py-16 lg:max-w-none lg:pr-0 lg:pl-8 xl:px-16">
+        <!-- Tabs -->
+        <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+            <div class="border-b border-gray-200 mt-6">
+                <nav class="-mb-px flex space-x-8">
+                    <button onclick="switchTab('localhost4000')" id="tab-localhost4000" class="border-b-2 border-blue-500 py-2 px-1 text-sm font-medium text-blue-600">
+                        localhost:4000
+                    </button>
+                    <button onclick="switchTab('localhost1143')" id="tab-localhost1143" class="border-b-2 border-transparent py-2 px-1 text-sm font-medium text-gray-500 hover:border-gray-300 hover:text-gray-700">
+                        localhost:1143
+                    </button>
+                    <button onclick="switchTab('kvraw')" id="tab-kvraw" class="border-b-2 border-transparent py-2 px-1 text-sm font-medium text-gray-500 hover:border-gray-300 hover:text-gray-700">
+                        KV - Data - Raw
+                    </button>
+                    <button onclick="switchTab('kvfiltered')" id="tab-kvfiltered" class="border-b-2 border-transparent py-2 px-1 text-sm font-medium text-gray-500 hover:border-gray-300 hover:text-gray-700">
+                        KV - Data - Filtered
+                    </button>
+                    <button onclick="switchTab('kvfolders')" id="tab-kvfolders" class="border-b-2 border-transparent py-2 px-1 text-sm font-medium text-gray-500 hover:border-gray-300 hover:text-gray-700">
+                        KV - Folders
+                    </button>
+                </nav>
+            </div>
 
-                <!-- System Info -->
-                <div class="prose prose-slate max-w-none">
-                    <p class="lead text-slate-500"><strong>Account:</strong> rose@mobicycle.ee | <strong>Bridge:</strong> IMAP 1143, SMTP 1025 | <strong>Backend:</strong> localhost:4000</p>
+            <!-- Tab Content -->
+            <div class="py-6">
+                <!-- Tab 1: localhost:4000 -->
+                <div id="localhost4000" class="block">
+                    <h2 class="text-2xl font-bold mb-4">Backend Server (localhost:4000)</h2>
+                    <div class="bg-white p-6 rounded-lg shadow">
+                        <h3 class="text-lg font-semibold mb-4">Server Status</h3>
+                        <div id="backend-status" class="text-gray-600">Loading...</div>
+                        
+                        <h3 class="text-lg font-semibold mb-4 mt-6">Available Endpoints</h3>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div class="border p-4 rounded">
+                                <h4 class="font-medium">Email Operations</h4>
+                                <ul class="text-sm text-gray-600 mt-2 space-y-1">
+                                    <li>POST /fetch-emails</li>
+                                    <li>POST /send-email</li>
+                                    <li>GET /email-count</li>
+                                    <li>GET /list-folders</li>
+                                </ul>
+                            </div>
+                            <div class="border p-4 rounded">
+                                <h4 class="font-medium">Health & Stats</h4>
+                                <ul class="text-sm text-gray-600 mt-2 space-y-1">
+                                    <li>GET /health</li>
+                                    <li>GET /account-info</li>
+                                    <li>GET /account-stats</li>
+                                    <li>GET /total-emails</li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
                 </div>
 
-                <div class="mt-8">
-                    <h2 class="scroll-mt-28 font-display text-2xl font-normal text-slate-900">System Health</h2>
-                    <div id="health-status" class="text-slate-500 italic mt-2">Loading health status...</div>
-                </div>
-
-                <!-- Tabs Navigation -->
-                <div class="border-b border-slate-200 mt-10">
-                    <nav class="flex space-x-1" aria-label="Tabs">
-                        <button class="px-4 py-2 text-sm font-medium rounded-t-lg bg-sky-50 text-sky-700 border-b-2 border-sky-500" onclick="switchTab('localhost4000')" id="tab-localhost4000">localhost:4000</button>
-                        <button class="px-4 py-2 text-sm font-medium rounded-t-lg bg-transparent text-slate-600 border-b-2 border-transparent hover:bg-slate-50 hover:text-slate-700" onclick="switchTab('localhost1143')" id="tab-localhost1143">localhost:1143</button>
-                        <button class="px-4 py-2 text-sm font-medium rounded-t-lg bg-transparent text-slate-600 border-b-2 border-transparent hover:bg-slate-50 hover:text-slate-700" onclick="switchTab('kvraw')" id="tab-kvraw">KV - Data - Raw <span id="tab-kvraw-count" class="ml-1 text-xs opacity-75">(-)</span></button>
-                        <button class="px-4 py-2 text-sm font-medium rounded-t-lg bg-transparent text-slate-600 border-b-2 border-transparent hover:bg-slate-50 hover:text-slate-700" onclick="switchTab('kvfiltered')" id="tab-kvfiltered">KV - Data - Filtered <span id="tab-kvfiltered-count" class="ml-1 text-xs opacity-75">(-)</span></button>
-                        <button class="px-4 py-2 text-sm font-medium rounded-t-lg bg-transparent text-slate-600 border-b-2 border-transparent hover:bg-slate-50 hover:text-slate-700" onclick="switchTab('kvfolders')" id="tab-kvfolders">KV - Folders <span id="tab-kvfolders-count" class="ml-1 text-xs opacity-75">(-)</span></button>
-                    </nav>
-                </div>
-
-    <div id="localhost4000" class="block">
-        <div class="mt-8 space-y-2">
-            <h2 class="text-lg font-semibold leading-7 text-gray-900">CRON Jobs</h2>
-            <p class="text-sm text-gray-600">Scheduled tasks running every 5 minutes with different job types</p>
-        </div>
-        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mt-4">
-            <div class="border border-gray-300 p-4 rounded-lg">
-                <h3 class="text-base font-semibold mb-2">🔍 Monitoring</h3>
-                <div class="text-sm text-gray-600" id="monitoring-last-run">Last run: Loading...</div>
-                <div class="inline-block px-2 py-1 rounded mt-2" id="monitoring-status">-</div>
-                <p class="text-sm mt-2">Runs every 4 hours (00:00, 04:00, 08:00, 12:00, 16:00, 20:00)</p>
-            </div>
-            <div class="border border-gray-300 p-4 rounded-lg">
-                <h3 class="text-base font-semibold mb-2">📥 Fetching</h3>
-                <div class="text-sm text-gray-600" id="fetching-last-run">Last run: Loading...</div>
-                <div class="inline-block px-2 py-1 rounded mt-2" id="fetching-status">-</div>
-                <p class="text-sm mt-2">Runs every 10 minutes (:00, :10, :20, :30, :40, :50)</p>
-            </div>
-            <div class="border border-gray-300 p-4 rounded-lg">
-                <h3 class="text-base font-semibold mb-2">🗂️ Sorting</h3>
-                <div class="text-sm text-gray-600" id="sorting-last-run">Last run: Loading...</div>
-                <div class="inline-block px-2 py-1 rounded mt-2" id="sorting-status">-</div>
-                <p class="text-sm mt-2">Runs 5 min after fetch (:05, :15, :25, :35, :45, :55)</p>
-            </div>
-            <div class="border border-gray-300 p-4 rounded-lg">
-                <h3 class="text-base font-semibold mb-2">🏷️ Categorization</h3>
-                <div class="text-sm text-gray-600" id="categorization-last-run">Last run: Loading...</div>
-                <div class="inline-block px-2 py-1 rounded mt-2" id="categorization-status">-</div>
-                <p class="text-sm mt-2">Runs 8 min after fetch (:08, :18, :28, :38, :48, :58)</p>
-            </div>
-        </div>
-
-        <div class="mt-8 space-y-2">
-            <h2 class="text-lg font-semibold leading-7 text-gray-900">Infrastructure Components</h2>
-            <p class="text-sm text-gray-600">Core services for email processing pipeline</p>
-        </div>
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mt-4">
-            <div class="border border-gray-300 p-4 rounded-lg">
-                <h3 class="text-lg font-semibold mb-3">📧 ProtonMail Bridge</h3>
-                <div class="space-y-2">
-                    <div class="flex justify-between items-center">
-                        <span class="text-sm text-gray-600">Status:</span>
-                        <span class="text-sm font-semibold" id="bridge-status">Loading...</span>
-                    </div>
-                    <div class="flex justify-between items-center">
-                        <span class="text-sm text-gray-600">IMAP Port:</span>
-                        <span class="text-sm font-mono" id="bridge-imap">localhost:1143</span>
-                    </div>
-                    <div class="flex justify-between items-center">
-                        <span class="text-sm text-gray-600">SMTP Port:</span>
-                        <span class="text-sm font-mono" id="bridge-smtp">localhost:1025</span>
-                    </div>
-                    <div class="flex justify-between items-center">
-                        <span class="text-sm text-gray-600">Last Check:</span>
-                        <span class="text-sm" id="bridge-last-check">-</span>
+                <!-- Tab 2: localhost:1143 -->
+                <div id="localhost1143" class="hidden">
+                    <h2 class="text-2xl font-bold mb-4">ProtonMail Bridge (localhost:1143)</h2>
+                    <div class="bg-white p-6 rounded-lg shadow">
+                        <h3 class="text-lg font-semibold mb-4">Bridge Status</h3>
+                        <div id="bridge-status" class="text-gray-600">Loading...</div>
+                        
+                        <h3 class="text-lg font-semibold mb-4 mt-6">Connection Info</h3>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div class="border p-4 rounded">
+                                <h4 class="font-medium">IMAP</h4>
+                                <p class="text-sm text-gray-600">Port: 1143</p>
+                                <p class="text-sm text-gray-600">Email: rose@mobicycle.ee</p>
+                            </div>
+                            <div class="border p-4 rounded">
+                                <h4 class="font-medium">SMTP</h4>
+                                <p class="text-sm text-gray-600">Port: 1025</p>
+                                <p class="text-sm text-gray-600">Outgoing mail</p>
+                            </div>
+                        </div>
                     </div>
                 </div>
-            </div>
 
-            <div class="border border-gray-300 p-4 rounded-lg">
-                <h3 class="text-lg font-semibold mb-3">🌐 Cloudflare Tunnel</h3>
-                <div class="space-y-2">
-                    <div class="flex justify-between items-center">
-                        <span class="text-sm text-gray-600">Status:</span>
-                        <span class="text-sm font-semibold" id="tunnel-status">Loading...</span>
-                    </div>
-                    <div class="flex justify-between items-center">
-                        <span class="text-sm text-gray-600">URL:</span>
-                        <span class="text-sm font-mono text-blue-600" id="tunnel-url">imap.mobicycle.ee</span>
-                    </div>
-                    <div class="flex justify-between items-center">
-                        <span class="text-sm text-gray-600">Target:</span>
-                        <span class="text-sm font-mono" id="tunnel-target">localhost:4000</span>
-                    </div>
-                    <div class="flex justify-between items-center">
-                        <span class="text-sm text-gray-600">Last Response:</span>
-                        <span class="text-sm" id="tunnel-last-response">-</span>
+                <!-- Tab 3: KV - Data - Raw -->
+                <div id="kvraw" class="hidden">
+                    <h2 class="text-2xl font-bold mb-4">KV - Raw Data (RAW_DATA_HEADERS)</h2>
+                    <div class="bg-white p-6 rounded-lg shadow">
+                        <h3 class="text-lg font-semibold mb-4">Raw Email Storage</h3>
+                        <div id="raw-data-status" class="text-gray-600 mb-4">Loading...</div>
+                        <div id="raw-data-content" class="text-sm"></div>
                     </div>
                 </div>
-            </div>
 
-            <div class="border border-gray-300 p-4 rounded-lg">
-                <h3 class="text-lg font-semibold mb-3">⚙️ Backend Service</h3>
-                <div class="space-y-2">
-                    <div class="flex justify-between items-center">
-                        <span class="text-sm text-gray-600">Status:</span>
-                        <span class="text-sm font-semibold" id="backend-status">Loading...</span>
+                <!-- Tab 4: KV - Data - Filtered -->
+                <div id="kvfiltered" class="hidden">
+                    <h2 class="text-2xl font-bold mb-4">KV - Filtered Data (FILTERED_DATA_HEADERS)</h2>
+                    <div class="bg-white p-6 rounded-lg shadow">
+                        <h3 class="text-lg font-semibold mb-4">Filtered Email Storage</h3>
+                        <div id="filtered-data-status" class="text-gray-600 mb-4">Loading...</div>
+                        <div id="filtered-data-content" class="text-sm"></div>
                     </div>
-                    <div class="flex justify-between items-center">
-                        <span class="text-sm text-gray-600">Port:</span>
-                        <span class="text-sm font-mono" id="backend-port">4000</span>
-                    </div>
-                    <div class="flex justify-between items-center">
-                        <span class="text-sm text-gray-600">Health:</span>
-                        <span class="text-sm" id="backend-health">-</span>
-                    </div>
-                    <div class="flex justify-between items-center">
-                        <span class="text-sm text-gray-600">Uptime:</span>
-                        <span class="text-sm" id="backend-uptime">-</span>
+                </div>
+
+                <!-- Tab 5: KV - Folders -->
+                <div id="kvfolders" class="hidden">
+                    <h2 class="text-2xl font-bold mb-4">KV - Legal Folders</h2>
+                    <div class="bg-white p-6 rounded-lg shadow">
+                        <h3 class="text-lg font-semibold mb-4">Legal Category Namespaces</h3>
+                        <div id="folders-status" class="text-gray-600 mb-4">Loading...</div>
+                        <div id="folders-content" class="grid grid-cols-1 md:grid-cols-3 gap-4"></div>
                     </div>
                 </div>
             </div>
-        </div>
-
-        <div class="mt-8 space-y-2">
-            <h2 class="text-lg font-semibold leading-7 text-gray-900">Email Workflow: Inbox → Whitelist → KV Namespaces</h2>
-            <p class="text-sm text-gray-600">Real-time email processing status</p>
-        </div>
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mt-4">
-            <div class="border-2 border-blue-300 p-6 rounded-2xl bg-gradient-to-br from-blue-50 to-white shadow-lg">
-                <h3 class="text-lg font-display font-semibold mb-3 text-blue-900">📧 ProtonMail Inbox</h3>
-                <div class="space-y-3">
-                    <div>
-                        <div class="text-4xl font-bold text-blue-900" id="inbox-total-emails">-</div>
-                        <div class="text-sm text-slate-600">Total emails in inbox</div>
-                    </div>
-                    <div class="pt-3 border-t border-blue-200">
-                        <div class="text-xs text-slate-500">Bridge Status: <span id="inbox-bridge-status" class="font-semibold">-</span></div>
-                    </div>
-                </div>
-            </div>
-
-            <div class="border-2 border-green-300 p-6 rounded-2xl bg-gradient-to-br from-green-50 to-white shadow-lg">
-                <h3 class="text-lg font-display font-semibold mb-3 text-green-900">✅ Whitelist Filter</h3>
-                <div class="space-y-3">
-                    <div>
-                        <div class="text-4xl font-bold text-green-900" id="whitelist-passed-count">-</div>
-                        <div class="text-sm text-slate-600">Emails passed whitelist</div>
-                    </div>
-                    <div class="pt-3 border-t border-green-200">
-                        <div class="text-xs text-slate-500">Total patterns: <span id="whitelist-pattern-count" class="font-semibold">-</span></div>
-                    </div>
-                </div>
-            </div>
-
-            <div class="border-2 border-purple-300 p-6 rounded-2xl bg-gradient-to-br from-purple-50 to-white shadow-lg">
-                <h3 class="text-lg font-display font-semibold mb-3 text-purple-900">📦 KV Namespaces (35)</h3>
-                <div class="space-y-3">
-                    <div>
-                        <div class="text-4xl font-bold text-purple-900" id="kv-stored-count">-</div>
-                        <div class="text-sm text-slate-600">Emails stored in KV</div>
-                    </div>
-                    <div class="pt-3 border-t border-purple-200 flex justify-between text-xs">
-                        <div class="text-slate-500">Pending: <span id="kv-pending-count" class="font-semibold text-amber-600">-</span></div>
-                        <div class="text-slate-500">Processed: <span id="kv-processed-count" class="font-semibold text-green-600">-</span></div>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <div class="mt-8 space-y-2">
-            <h2 class="text-lg font-semibold leading-7 text-gray-900">Email Calculation Status</h2>
-            <p class="text-sm text-gray-600">Real-time calculation of emails across the workflow</p>
-        </div>
-
-        <div class="overflow-hidden rounded-2xl bg-white shadow-lg shadow-slate-900/5 ring-1 ring-slate-900/10 mt-4">
-            <table class="w-full table-fixed border-collapse">
-                <thead>
-                    <tr class="bg-slate-50">
-                        <th class="px-6 py-5 text-left font-display text-base font-semibold text-slate-900 border-b border-slate-200">Question</th>
-                        <th class="px-6 py-5 text-left font-display text-base font-semibold text-slate-900 border-b border-slate-200">Answer</th>
-                        <th class="px-6 py-5 text-center font-display text-base font-semibold text-slate-900 border-b border-slate-200 w-32">Status</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    <tr class="border-b border-slate-100 hover:bg-slate-50 transition-colors">
-                        <td class="px-6 py-4 text-left text-sm text-slate-700">How many accounts on Proton Mail Bridge?</td>
-                        <td class="px-6 py-4 text-left text-sm font-medium text-slate-900" id="calc-bridge-accounts">-</td>
-                        <td class="px-6 py-4 text-center" id="calc-bridge-accounts-status"></td>
-                    </tr>
-                    <tr class="border-b border-slate-100 hover:bg-slate-50 transition-colors">
-                        <td class="px-6 py-4 text-left text-sm text-slate-700">How many accounts in this instance?</td>
-                        <td class="px-6 py-4 text-left text-sm font-medium text-slate-900" id="calc-accounts">-</td>
-                        <td class="px-6 py-4 text-center" id="calc-accounts-status"></td>
-                    </tr>
-                    <tr class="border-b border-slate-100 hover:bg-slate-50 transition-colors">
-                        <td class="px-6 py-4 text-left text-sm text-slate-700">How many emails across all accounts?</td>
-                        <td class="px-6 py-4 text-left text-sm font-medium text-slate-900" id="calc-all-emails">-</td>
-                        <td class="px-6 py-4 text-center" id="calc-all-emails-status"></td>
-                    </tr>
-                    <tr class="border-b border-slate-100 hover:bg-slate-50 transition-colors">
-                        <td class="px-6 py-4 text-left text-sm text-slate-700">How many folders for MobiCycle OÜ?</td>
-                        <td class="px-6 py-4 text-left text-sm font-medium text-slate-900" id="calc-folders">-</td>
-                        <td class="px-6 py-4 text-center" id="calc-folders-status"></td>
-                    </tr>
-                    <tr class="border-b border-slate-100 hover:bg-slate-50 transition-colors">
-                        <td class="px-6 py-4 text-left text-sm text-slate-700">How many emails for MobiCycle OÜ?</td>
-                        <td class="px-6 py-4 text-left text-sm font-medium text-slate-900" id="calc-mobicycle">-</td>
-                        <td class="px-6 py-4 text-center" id="calc-mobicycle-status"></td>
-                    </tr>
-                    <tr class="border-b border-slate-100 hover:bg-slate-50 transition-colors">
-                        <td class="px-6 py-4 text-left text-sm text-slate-700">How many emails per whitelist?</td>
-                        <td class="px-6 py-4 text-left text-sm font-medium text-slate-900" id="calc-whitelist">-</td>
-                        <td class="px-6 py-4 text-center" id="calc-whitelist-status"></td>
-                    </tr>
-                    <tr class="border-b border-slate-100 hover:bg-slate-50 transition-colors">
-                        <td class="px-6 py-4 text-left text-sm text-slate-700">How many emails in KV namespace?</td>
-                        <td class="px-6 py-4 text-left text-sm font-medium text-slate-900" id="calc-kv">-</td>
-                        <td class="px-6 py-4 text-center" id="calc-kv-status"></td>
-                    </tr>
-                    <tr class="border-b border-slate-100 hover:bg-slate-50 transition-colors">
-                        <td class="px-6 py-4 text-left text-sm text-slate-700">Inception - First email received</td>
-                        <td class="px-6 py-4 text-left text-sm font-medium text-slate-900" id="calc-inception">-</td>
-                        <td class="px-6 py-4 text-center" id="calc-inception-status"></td>
-                    </tr>
-                    <tr class="hover:bg-slate-50 transition-colors">
-                        <td class="px-6 py-4 text-left text-sm text-slate-700">Largest folder</td>
-                        <td class="px-6 py-4 text-left text-sm font-medium text-slate-900" id="calc-largest-folder">-</td>
-                        <td class="px-6 py-4 text-center" id="calc-largest-folder-status"></td>
-                    </tr>
-                </tbody>
-            </table>
-        </div>
-
-        <table class="w-full border-collapse mt-4 hidden">
-            <tr>
-                <th class="p-3 text-left border border-gray-300 bg-gray-100 font-semibold">Question</th>
-                <th class="p-3 text-left border border-gray-300 bg-gray-100 font-semibold">Answer</th>
-                <th class="p-3 text-center border border-gray-300 bg-gray-100 font-semibold w-24">Status</th>
-            </tr>
-            <tr>
-                <td class="p-3 text-left border border-gray-300">21. Has tunnel reconnected unexpectedly?</td>
-                <td class="p-3 text-left border border-gray-300" id="q21"></td>
-                <td class="p-3 text-center border border-gray-300" id="q21-status"></td>
-            </tr>
-            <tr>
-                <td class="p-3 text-left border border-gray-300">22. Tunnel reporting degraded connectivity?</td>
-                <td class="p-3 text-left border border-gray-300" id="q22"></td>
-                <td class="p-3 text-center border border-gray-300" id="q22-status"></td>
-            </tr>
-            <tr>
-                <td class="p-3 text-left border border-gray-300">23. Ingress rules changed without authorization?</td>
-                <td class="p-3 text-left border border-gray-300" id="q23"></td>
-                <td class="p-3 text-center border border-gray-300" id="q23-status"></td>
-            </tr>
-            <tr>
-                <td class="p-3 text-left border border-gray-300">24. DNS records aligned with tunnel hostnames?</td>
-                <td class="p-3 text-left border border-gray-300" id="q24"></td>
-                <td class="p-3 text-center border border-gray-300" id="q24-status"></td>
-            </tr>
-            <tr>
-                <td class="p-3 text-left border border-gray-300">25. Packet loss between Cloudflare edge and local endpoint?</td>
-                <td class="p-3 text-left border border-gray-300" id="q25"></td>
-                <td class="p-3 text-center border border-gray-300" id="q25-status"></td>
-            </tr>
-            <tr>
-                <td class="p-3 text-left border border-gray-300">26. TLS negotiations completing correctly?</td>
-                <td class="p-3 text-left border border-gray-300" id="q26"></td>
-                <td class="p-3 text-center border border-gray-300" id="q26-status"></td>
-            </tr>
-        </table>
-
-        <h2 class="text-2xl font-semibold mt-8 text-gray-700">Email Processing</h2>
-        <table class="w-full border-collapse my-4">
-            <tr>
-                <th class="p-3 text-left border border-gray-300 bg-gray-100 font-semibold">Question</th>
-                <th class="p-3 text-left border border-gray-300 bg-gray-100 font-semibold">Answer</th>
-                <th class="p-3 text-center border border-gray-300 bg-gray-100 font-semibold w-24">Status</th>
-            </tr>
-            <tr>
-                <td class="p-3 text-left border border-gray-300">27. Emails retrieved on schedule?</td>
-                <td class="p-3 text-left border border-gray-300" id="q27"></td>
-                <td class="p-3 text-center border border-gray-300" id="q27-status"></td>
-            </tr>
-            <tr>
-                <td class="p-3 text-left border border-gray-300">28. Average polling interval success rate?</td>
-                <td class="p-3 text-left border border-gray-300" id="q28"></td>
-                <td class="p-3 text-center border border-gray-300" id="q28-status"></td>
-            </tr>
-            <tr>
-                <td class="p-3 text-left border border-gray-300">29. Retrieval attempts failing?</td>
-                <td class="p-3 text-left border border-gray-300" id="q29"></td>
-                <td class="p-3 text-center border border-gray-300" id="q29-status"></td>
-            </tr>
-            <tr>
-                <td class="p-3 text-left border border-gray-300">30. Latency metrics (Proton → Bridge → Script)?</td>
-                <td class="p-3 text-left border border-gray-300" id="q30"></td>
-                <td class="p-3 text-center border border-gray-300" id="q30-status"></td>
-            </tr>
-            <tr>
-                <td class="p-3 text-left border border-gray-300">31. Messages complete and uncorrupted?</td>
-                <td class="p-3 text-left border border-gray-300" id="q31"></td>
-                <td class="p-3 text-center border border-gray-300" id="q31-status"></td>
-            </tr>
-            <tr>
-                <td class="p-3 text-left border border-gray-300">32. Attachments consistently retrieved?</td>
-                <td class="p-3 text-left border border-gray-300" id="q32"></td>
-                <td class="p-3 text-center border border-gray-300" id="q32-status"></td>
-            </tr>
-            <tr>
-                <td class="p-3 text-left border border-gray-300">33. Duplicate downloads occurring?</td>
-                <td class="p-3 text-left border border-gray-300" id="q33"></td>
-                <td class="p-3 text-center border border-gray-300" id="q33-status"></td>
-            </tr>
-        </table>
-
-        <h2 class="text-2xl font-semibold mt-8 text-gray-700">Workflow Operations</h2>
-        <table class="w-full border-collapse my-4">
-            <tr>
-                <th class="p-3 text-left border border-gray-300 bg-gray-100 font-semibold">Question</th>
-                <th class="p-3 text-left border border-gray-300 bg-gray-100 font-semibold">Answer</th>
-                <th class="p-3 text-center border border-gray-300 bg-gray-100 font-semibold w-24">Status</th>
-            </tr>
-            <tr>
-                <td class="p-3 text-left border border-gray-300">34. Which step is failing?</td>
-                <td class="p-3 text-left border border-gray-300" id="q34"></td>
-                <td class="p-3 text-center border border-gray-300" id="q34-status"></td>
-            </tr>
-            <tr>
-                <td class="p-3 text-left border border-gray-300">35. Should I add cron triggers to all workflows so they automatically poll for emails?</td>
-                <td class="p-3 text-left border border-gray-300" id="q35"></td>
-                <td class="p-3 text-center border border-gray-300" id="q35-status"></td>
-            </tr>
-            <tr>
-                <td class="p-3 text-left border border-gray-300">36. Checks all dashboard statuses at once?</td>
-                <td class="p-3 text-left border border-gray-300" id="q36"></td>
-                <td class="p-3 text-center border border-gray-300" id="q36-status"></td>
-            </tr>
-            <tr>
-                <td class="p-3 text-left border border-gray-300">37. Triggers all workflows?</td>
-                <td class="p-3 text-left border border-gray-300" id="q37"></td>
-                <td class="p-3 text-center border border-gray-300" id="q37-status"></td>
-            </tr>
-            <tr>
-                <td class="p-3 text-left border border-gray-300">38. Shows a combined status view?</td>
-                <td class="p-3 text-left border border-gray-300" id="q38"></td>
-                <td class="p-3 text-center border border-gray-300" id="q38-status"></td>
-            </tr>
-            <tr>
-                <td class="p-3 text-left border border-gray-300">39. What should the script do?</td>
-                <td class="p-3 text-left border border-gray-300" id="q39"></td>
-                <td class="p-3 text-center border border-gray-300" id="q39-status"></td>
-            </tr>
-        </table>
-
-        <h2 class="text-2xl font-semibold mt-8 text-gray-700">Deployment & Configuration</h2>
-        <table class="w-full border-collapse my-4">
-            <tr>
-                <th class="p-3 text-left border border-gray-300 bg-gray-100 font-semibold">Question</th>
-                <th class="p-3 text-left border border-gray-300 bg-gray-100 font-semibold">Answer</th>
-                <th class="p-3 text-center border border-gray-300 bg-gray-100 font-semibold w-24">Status</th>
-            </tr>
-            <tr>
-                <td class="p-3 text-left border border-gray-300">40. Should I add the same dashboard to other workflows?</td>
-                <td class="p-3 text-left border border-gray-300" id="q40"></td>
-                <td class="p-3 text-center border border-gray-300" id="q40-status"></td>
-            </tr>
-            <tr>
-                <td class="p-3 text-left border border-gray-300">41. Should I complete this task or discuss the workflows structure first?</td>
-                <td class="p-3 text-left border border-gray-300" id="q41"></td>
-                <td class="p-3 text-center border border-gray-300" id="q41-status"></td>
-            </tr>
-            <tr>
-                <td class="p-3 text-left border border-gray-300">42. Install the local cron (free, requires Mac always on)?</td>
-                <td class="p-3 text-left border border-gray-300" id="q42"></td>
-                <td class="p-3 text-center border border-gray-300" id="q42-status"></td>
-            </tr>
-            <tr>
-                <td class="p-3 text-left border border-gray-300">43. Add Cloudflare cron trigger (15¢/month, always running)?</td>
-                <td class="p-3 text-left border border-gray-300" id="q43"></td>
-                <td class="p-3 text-center border border-gray-300" id="q43-status"></td>
-            </tr>
-            <tr>
-                <td class="p-3 text-left border border-gray-300">44. Just manually start cloudflared when needed (free, manual)?</td>
-                <td class="p-3 text-left border border-gray-300" id="q44"></td>
-                <td class="p-3 text-center border border-gray-300" id="q44-status"></td>
-            </tr>
-            <tr>
-                <td class="p-3 text-left border border-gray-300">45. Should I add this to the cron/auto-start setup?</td>
-                <td class="p-3 text-left border border-gray-300" id="q45"></td>
-                <td class="p-3 text-center border border-gray-300" id="q45-status"></td>
-            </tr>
-            <tr>
-                <td class="p-3 text-left border border-gray-300">46. Would you like me to set up email-monitor.js as a persistent service that auto-starts when your Mac boots?</td>
-                <td class="p-3 text-left border border-gray-300" id="q46"></td>
-                <td class="p-3 text-center border border-gray-300" id="q46-status"></td>
-            </tr>
-        </table>
-
-        <h2 class="text-2xl font-semibold mt-8 text-gray-700">System Requirements</h2>
-        <table class="w-full border-collapse my-4">
-            <tr>
-                <th class="p-3 text-left border border-gray-300 bg-gray-100 font-semibold">Question</th>
-                <th class="p-3 text-left border border-gray-300 bg-gray-100 font-semibold">Answer</th>
-                <th class="p-3 text-center border border-gray-300 bg-gray-100 font-semibold w-24">Status</th>
-            </tr>
-            <tr>
-                <td class="p-3 text-left border border-gray-300">47. Does your Mac need to wake up for Bridge to work?</td>
-                <td class="p-3 text-left border border-gray-300" id="q47"></td>
-                <td class="p-3 text-center border border-gray-300" id="q47-status"></td>
-            </tr>
-            <tr>
-                <td class="p-3 text-left border border-gray-300">48. Is your Mac usually on/sleeping, or completely off?</td>
-                <td class="p-3 text-left border border-gray-300" id="q48"></td>
-                <td class="p-3 text-center border border-gray-300" id="q48-status"></td>
-            </tr>
-            <tr>
-                <td class="p-3 text-left border border-gray-300">49. Would you be open to running Bridge on a cloud VM instead?</td>
-                <td class="p-3 text-left border border-gray-300" id="q49"></td>
-                <td class="p-3 text-center border border-gray-300" id="q49-status"></td>
-            </tr>
-            <tr>
-                <td class="p-3 text-left border border-gray-300">50. Should I create the iOS Shortcut automation for you?</td>
-                <td class="p-3 text-left border border-gray-300" id="q50"></td>
-                <td class="p-3 text-center border border-gray-300" id="q50-status"></td>
-            </tr>
-        </table>
-
-        <h2 class="text-2xl font-semibold mt-8 text-gray-700">Performance & Scaling</h2>
-        <table class="w-full border-collapse my-4">
-            <tr>
-                <th class="p-3 text-left border border-gray-300 bg-gray-100 font-semibold">Question</th>
-                <th class="p-3 text-left border border-gray-300 bg-gray-100 font-semibold">Answer</th>
-                <th class="p-3 text-center border border-gray-300 bg-gray-100 font-semibold w-24">Status</th>
-            </tr>
-            <tr>
-                <td class="p-3 text-left border border-gray-300">51. How can we keep the cron job as low as possible to not trigger any fees?</td>
-                <td class="p-3 text-left border border-gray-300" id="q51"></td>
-                <td class="p-3 text-center border border-gray-300" id="q51-status"></td>
-            </tr>
-            <tr>
-                <td class="p-3 text-left border border-gray-300">52. Want me to check if the workflow has finished processing and show you which emails were categorized?</td>
-                <td class="p-3 text-left border border-gray-300" id="q52"></td>
-                <td class="p-3 text-center border border-gray-300" id="q52-status"></td>
-            </tr>
-            <tr>
-                <td class="p-3 text-left border border-gray-300">53. Should I update the workflow to separate these steps on the dashboard?</td>
-                <td class="p-3 text-left border border-gray-300" id="q53"></td>
-                <td class="p-3 text-center border border-gray-300" id="q53-status"></td>
-            </tr>
-            <tr>
-                <td class="p-3 text-left border border-gray-300">54. Should I update the workflow to track and display all these stages separately on the dashboard?</td>
-                <td class="p-3 text-left border border-gray-300" id="q54"></td>
-                <td class="p-3 text-center border border-gray-300" id="q54-status"></td>
-            </tr>
-        </table>
-    </div>
-
-    <div id="localhost1143" class="hidden">
-        <div class="mt-8 space-y-2">
-            <h2 class="text-lg font-semibold leading-7 text-gray-900">MobiCycle OÜ - Legal Email Processing</h2>
-            <p class="text-sm text-gray-600">Project-specific configuration for legal email triage and classification</p>
-        </div>
-
-        <div class="bg-blue-50 border-l-4 border-blue-500 p-4 mt-4">
-            <p class="text-sm text-gray-700">This pipeline processes legal emails from UK courts, government agencies, and legal representatives. Each email is automatically triaged, classified, and routed to Claude for appropriate action.</p>
-        </div>
-
-        <h3 class="text-xl font-semibold mt-6 text-gray-600">Phase 1: Email Collection & Filtering</h3>
-
-        <div class="flex gap-2 my-4">
-            <button onclick="runPhase1()" class="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 font-semibold">
-                ▶️ Run Phase 1 Now
-            </button>
-            <div id="phase1-trigger-status" class="flex items-center text-sm text-gray-600"></div>
-        </div>
-
-        <div class="bg-yellow-50 border-l-4 border-yellow-500 p-4 my-4">
-            <p class="font-semibold text-gray-800">📊 Email Statistics</p>
-            <div class="grid grid-cols-4 gap-3 mt-2 text-sm">
-                <div>
-                    <span class="text-gray-600">Folders:</span>
-                    <span id="folders-count" class="font-bold text-purple-600 ml-2">-</span>
-                </div>
-                <div>
-                    <span class="text-gray-600">Available:</span>
-                    <span id="emails-available" class="font-bold text-gray-600 ml-2">-</span>
-                </div>
-                <div>
-                    <span class="text-gray-600">Fetched:</span>
-                    <span id="emails-fetched" class="font-bold text-blue-600 ml-2">-</span>
-                </div>
-                <div>
-                    <span class="text-gray-600">Whitelisted:</span>
-                    <span id="emails-whitelisted" class="font-bold text-green-600 ml-2">-</span>
-                </div>
-            </div>
-        </div>
-
-        <table class="w-full border-collapse my-4">
-            <tr>
-                <th class="p-3 text-left border border-gray-300 bg-gray-100 font-semibold w-16">Step</th>
-                <th class="p-3 text-left border border-gray-300 bg-gray-100 font-semibold">Action</th>
-                <th class="p-3 text-left border border-gray-300 bg-gray-100 font-semibold w-32">Status</th>
-            </tr>
-            <tr>
-                <td class="p-3 text-left border border-gray-300">1</td>
-                <td class="p-3 text-left border border-gray-300">ProtonMail Bridge fetches all emails</td>
-                <td class="p-3 text-left border border-gray-300" id="pipeline-1"></td>
-            </tr>
-            <tr>
-                <td class="p-3 text-left border border-gray-300">2</td>
-                <td class="p-3 text-left border border-gray-300">Filter for relevant emails</td>
-                <td class="p-3 text-left border border-gray-300" id="pipeline-2"></td>
-            </tr>
-            <tr>
-                <td class="p-3 text-left border border-gray-300">3</td>
-                <td class="p-3 text-left border border-gray-300">Remove emails where rose@mobicycle.ee is sender</td>
-                <td class="p-3 text-left border border-gray-300" id="pipeline-3"></td>
-            </tr>
-            <tr>
-                <td class="p-3 text-left border border-gray-300">4</td>
-                <td class="p-3 text-left border border-gray-300">Update todo list with new emails</td>
-                <td class="p-3 text-left border border-gray-300" id="pipeline-4"></td>
-            </tr>
-            <tr>
-                <td class="p-3 text-left border border-gray-300">5</td>
-                <td class="p-3 text-left border border-gray-300">Send notifications to Claude & Rose</td>
-                <td class="p-3 text-left border border-gray-300" id="pipeline-5"></td>
-            </tr>
-        </table>
-
-        <h3 class="text-xl font-semibold mt-6 text-gray-600">Phase 2: Email Triage</h3>
-        <table class="w-full border-collapse my-4">
-            <tr>
-                <th class="p-3 text-left border border-gray-300 bg-gray-100 font-semibold w-16">Step</th>
-                <th class="p-3 text-left border border-gray-300 bg-gray-100 font-semibold">Action</th>
-                <th class="p-3 text-left border border-gray-300 bg-gray-100 font-semibold w-32">Status</th>
-            </tr>
-            <tr>
-                <td class="p-3 text-left border border-gray-300">6</td>
-                <td class="p-3 text-left border border-gray-300">Shortlist one email for processing</td>
-                <td class="p-3 text-left border border-gray-300" id="pipeline-6"></td>
-            </tr>
-            <tr>
-                <td class="p-3 text-left border border-gray-300">7-10</td>
-                <td class="p-3 text-left border border-gray-300">Extract context: Keywords, Email addresses, References (case numbers, etc.)</td>
-                <td class="p-3 text-left border border-gray-300" id="pipeline-7-10"></td>
-            </tr>
-            <tr>
-                <td class="p-3 text-left border border-gray-300">11</td>
-                <td class="p-3 text-left border border-gray-300">Send shortlisted email + context to triage MCP server/worker</td>
-                <td class="p-3 text-left border border-gray-300" id="pipeline-11"></td>
-            </tr>
-        </table>
-
-        <h3 class="text-xl font-semibold mt-6 text-gray-600">Phase 3: Classification & Action</h3>
-        <table class="w-full border-collapse my-4">
-            <tr>
-                <th class="p-3 text-left border border-gray-300 bg-gray-100 font-semibold w-16">Step</th>
-                <th class="p-3 text-left border border-gray-300 bg-gray-100 font-semibold">Action</th>
-                <th class="p-3 text-left border border-gray-300 bg-gray-100 font-semibold w-32">Status</th>
-            </tr>
-            <tr>
-                <td class="p-3 text-left border border-gray-300">12</td>
-                <td class="p-3 text-left border border-gray-300">Triage classifies as: (1) No action (2) Low complexity (3) High complexity</td>
-                <td class="p-3 text-left border border-gray-300" id="pipeline-12"></td>
-            </tr>
-            <tr>
-                <td class="p-3 text-left border border-gray-300">13</td>
-                <td class="p-3 text-left border border-gray-300">No action → mark todo as closed</td>
-                <td class="p-3 text-left border border-gray-300" id="pipeline-13"></td>
-            </tr>
-            <tr>
-                <td class="p-3 text-left border border-gray-300">14</td>
-                <td class="p-3 text-left border border-gray-300">Low complexity → Claude responds → mark closed</td>
-                <td class="p-3 text-left border border-gray-300" id="pipeline-14"></td>
-            </tr>
-            <tr>
-                <td class="p-3 text-left border border-gray-300">15</td>
-                <td class="p-3 text-left border border-gray-300">High complexity → Claude creates documents/submits applications</td>
-                <td class="p-3 text-left border border-gray-300" id="pipeline-15"></td>
-            </tr>
-        </table>
-
-        <h3 class="text-xl font-semibold mt-6 text-gray-600">Phase 4: Document Generation & Delivery</h3>
-        <table class="w-full border-collapse my-4">
-            <tr>
-                <th class="p-3 text-left border border-gray-300 bg-gray-100 font-semibold w-16">Step</th>
-                <th class="p-3 text-left border border-gray-300 bg-gray-100 font-semibold">Action</th>
-                <th class="p-3 text-left border border-gray-300 bg-gray-100 font-semibold w-32">Status</th>
-            </tr>
-            <tr>
-                <td class="p-3 text-left border border-gray-300">16-17</td>
-                <td class="p-3 text-left border border-gray-300">Claude writes attachments (letters, PDFs)</td>
-                <td class="p-3 text-left border border-gray-300" id="pipeline-16-17"></td>
-            </tr>
-            <tr>
-                <td class="p-3 text-left border border-gray-300">18</td>
-                <td class="p-3 text-left border border-gray-300">Claude writes email cover letters</td>
-                <td class="p-3 text-left border border-gray-300" id="pipeline-18"></td>
-            </tr>
-            <tr>
-                <td class="p-3 text-left border border-gray-300">19</td>
-                <td class="p-3 text-left border border-gray-300">Send attachments + cover letters to relevant parties</td>
-                <td class="p-3 text-left border border-gray-300" id="pipeline-19"></td>
-            </tr>
-            <tr>
-                <td class="p-3 text-left border border-gray-300">20</td>
-                <td class="p-3 text-left border border-gray-300">Upload attachments to ce-file system</td>
-                <td class="p-3 text-left border border-gray-300" id="pipeline-20"></td>
-            </tr>
-            <tr>
-                <td class="p-3 text-left border border-gray-300">21</td>
-                <td class="p-3 text-left border border-gray-300">Document everything in ce-file with explanations</td>
-                <td class="p-3 text-left border border-gray-300" id="pipeline-21"></td>
-            </tr>
-        </table>
-
-        <h2 class="text-2xl font-semibold mt-8 text-gray-700">MobiCycle OÜ - Legal KV Namespaces (35 Total)</h2>
-
-        <h3 class="text-xl font-semibold mt-6 text-gray-600">Courts (7 KV Namespaces)</h3>
-        <table class="w-full border-collapse my-4">
-            <tr>
-                <th class="p-3 text-left border border-gray-300 bg-gray-100 font-semibold">Court</th>
-                <th class="p-3 text-left border border-gray-300 bg-gray-100 font-semibold">KV Namespace</th>
-                <th class="p-3 text-left border border-gray-300 bg-gray-100 font-semibold">Email Count</th>
-                <th class="p-3 text-left border border-gray-300 bg-gray-100 font-semibold">Status</th>
-            </tr>
-            <tr>
-                <td class="p-3 text-left border border-gray-300">Supreme Court</td>
-                <td class="p-3 text-left border border-gray-300 text-xs">EMAIL_COURTS_SUPREME_COURT</td>
-                <td class="p-3 text-left border border-gray-300" id="kv-supreme-court"></td>
-                <td class="p-3 text-left border border-gray-300" id="status-supreme-court"></td>
-            </tr>
-            <tr>
-                <td class="p-3 text-left border border-gray-300">Court of Appeals - Civil Division</td>
-                <td class="p-3 text-left border border-gray-300 text-xs">EMAIL_COURTS_COURT_OF_APPEALS_CIVIL_DIVISION</td>
-                <td class="p-3 text-left border border-gray-300" id="kv-appeals-civil"></td>
-                <td class="p-3 text-left border border-gray-300" id="status-appeals-civil"></td>
-            </tr>
-            <tr>
-                <td class="p-3 text-left border border-gray-300">King's Bench - Appeals Division</td>
-                <td class="p-3 text-left border border-gray-300 text-xs">EMAIL_COURTS_KINGS_BENCH_APPEALS_DIVISION</td>
-                <td class="p-3 text-left border border-gray-300" id="kv-kings-bench"></td>
-                <td class="p-3 text-left border border-gray-300" id="status-kings-bench"></td>
-            </tr>
-            <tr>
-                <td class="p-3 text-left border border-gray-300">Chancery Division</td>
-                <td class="p-3 text-left border border-gray-300 text-xs">EMAIL_COURTS_CHANCERY_DIVISION</td>
-                <td class="p-3 text-left border border-gray-300" id="kv-chancery"></td>
-                <td class="p-3 text-left border border-gray-300" id="status-chancery"></td>
-            </tr>
-            <tr>
-                <td class="p-3 text-left border border-gray-300">Administrative Court</td>
-                <td class="p-3 text-left border border-gray-300 text-xs">EMAIL_COURTS_ADMINISTRATIVE_COURT</td>
-                <td class="p-3 text-left border border-gray-300" id="kv-admin-court"></td>
-                <td class="p-3 text-left border border-gray-300" id="status-admin-court"></td>
-            </tr>
-            <tr>
-                <td class="p-3 text-left border border-gray-300">Central London County Court</td>
-                <td class="p-3 text-left border border-gray-300 text-xs">EMAIL_COURTS_CENTRAL_LONDON_COUNTY_COURT</td>
-                <td class="p-3 text-left border border-gray-300" id="kv-central-london"></td>
-                <td class="p-3 text-left border border-gray-300" id="status-central-london"></td>
-            </tr>
-            <tr>
-                <td class="p-3 text-left border border-gray-300">Clerkenwell County Court</td>
-                <td class="p-3 text-left border border-gray-300 text-xs">EMAIL_COURTS_CLERKENWELL_COUNTY_COURT</td>
-                <td class="p-3 text-left border border-gray-300" id="kv-clerkenwell"></td>
-                <td class="p-3 text-left border border-gray-300" id="status-clerkenwell"></td>
-            </tr>
-        </table>
-
-        <h3 class="text-xl font-semibold mt-6 text-gray-600">Complaints (5 KV Namespaces)</h3>
-        <table class="w-full border-collapse my-4">
-            <tr>
-                <th class="p-3 text-left border border-gray-300 bg-gray-100 font-semibold">Organization</th>
-                <th class="p-3 text-left border border-gray-300 bg-gray-100 font-semibold">KV Namespace</th>
-                <th class="p-3 text-left border border-gray-300 bg-gray-100 font-semibold">Email Count</th>
-                <th class="p-3 text-left border border-gray-300 bg-gray-100 font-semibold">Status</th>
-            </tr>
-            <tr>
-                <td class="p-3 text-left border border-gray-300">ICO (Information Commissioner's Office)</td>
-                <td class="p-3 text-left border border-gray-300 text-xs">EMAIL_COMPLAINTS_ICO</td>
-                <td class="p-3 text-left border border-gray-300" id="kv-ico"></td>
-                <td class="p-3 text-left border border-gray-300" id="status-ico"></td>
-            </tr>
-            <tr>
-                <td class="p-3 text-left border border-gray-300">PHSO (Parliamentary & Health Service Ombudsman)</td>
-                <td class="p-3 text-left border border-gray-300 text-xs">EMAIL_COMPLAINTS_PHSO</td>
-                <td class="p-3 text-left border border-gray-300" id="kv-phso"></td>
-                <td class="p-3 text-left border border-gray-300" id="status-phso"></td>
-            </tr>
-            <tr>
-                <td class="p-3 text-left border border-gray-300">Parliament</td>
-                <td class="p-3 text-left border border-gray-300 text-xs">EMAIL_COMPLAINTS_PARLIAMENT</td>
-                <td class="p-3 text-left border border-gray-300" id="kv-parliament"></td>
-                <td class="p-3 text-left border border-gray-300" id="status-parliament"></td>
-            </tr>
-            <tr>
-                <td class="p-3 text-left border border-gray-300">HMCTS (HM Courts & Tribunals Service)</td>
-                <td class="p-3 text-left border border-gray-300 text-xs">EMAIL_COMPLAINTS_HMCTS</td>
-                <td class="p-3 text-left border border-gray-300" id="kv-hmcts"></td>
-                <td class="p-3 text-left border border-gray-300" id="status-hmcts"></td>
-            </tr>
-            <tr>
-                <td class="p-3 text-left border border-gray-300">Bar Standards Board</td>
-                <td class="p-3 text-left border border-gray-300 text-xs">EMAIL_COMPLAINTS_BAR_STANDARDS_BOARD</td>
-                <td class="p-3 text-left border border-gray-300" id="kv-bar-standards"></td>
-                <td class="p-3 text-left border border-gray-300" id="status-bar-standards"></td>
-            </tr>
-        </table>
-
-        <h3 class="text-xl font-semibold mt-6 text-gray-600">Legal Expenses (4 KV Namespaces)</h3>
-        <table class="w-full border-collapse my-4">
-            <tr>
-                <th class="p-3 text-left border border-gray-300 bg-gray-100 font-semibold">Category</th>
-                <th class="p-3 text-left border border-gray-300 bg-gray-100 font-semibold">KV Namespace</th>
-                <th class="p-3 text-left border border-gray-300 bg-gray-100 font-semibold">Email Count</th>
-                <th class="p-3 text-left border border-gray-300 bg-gray-100 font-semibold">Status</th>
-            </tr>
-            <tr>
-                <td class="p-3 text-left border border-gray-300">Legal Fees - Claimant</td>
-                <td class="p-3 text-left border border-gray-300 text-xs">EMAIL_EXPENSES_LEGAL_FEES_CLAIMANT</td>
-                <td class="p-3 text-left border border-gray-300" id="kv-fees-claimant"></td>
-                <td class="p-3 text-left border border-gray-300" id="status-fees-claimant"></td>
-            </tr>
-            <tr>
-                <td class="p-3 text-left border border-gray-300">Legal Fees - Company</td>
-                <td class="p-3 text-left border border-gray-300 text-xs">EMAIL_EXPENSES_LEGAL_FEES_COMPANY</td>
-                <td class="p-3 text-left border border-gray-300" id="kv-fees-company"></td>
-                <td class="p-3 text-left border border-gray-300" id="status-fees-company"></td>
-            </tr>
-            <tr>
-                <td class="p-3 text-left border border-gray-300">Legal Fees - Director</td>
-                <td class="p-3 text-left border border-gray-300 text-xs">EMAIL_EXPENSES_LEGAL_FEES_DIRECTOR</td>
-                <td class="p-3 text-left border border-gray-300" id="kv-fees-director"></td>
-                <td class="p-3 text-left border border-gray-300" id="status-fees-director"></td>
-            </tr>
-            <tr>
-                <td class="p-3 text-left border border-gray-300">Repairs</td>
-                <td class="p-3 text-left border border-gray-300 text-xs">EMAIL_EXPENSES_REPAIRS</td>
-                <td class="p-3 text-left border border-gray-300" id="kv-repairs"></td>
-                <td class="p-3 text-left border border-gray-300" id="status-repairs"></td>
-            </tr>
-        </table>
-
-        <h3 class="text-xl font-semibold mt-6 text-gray-600">Claimants (4 KV Namespaces)</h3>
-        <table class="w-full border-collapse my-4">
-            <tr>
-                <th class="p-3 text-left border border-gray-300 bg-gray-100 font-semibold">Claimant</th>
-                <th class="p-3 text-left border border-gray-300 bg-gray-100 font-semibold">KV Namespace</th>
-                <th class="p-3 text-left border border-gray-300 bg-gray-100 font-semibold">Email Count</th>
-                <th class="p-3 text-left border border-gray-300 bg-gray-100 font-semibold">Status</th>
-            </tr>
-            <tr>
-                <td class="p-3 text-left border border-gray-300">HK Law</td>
-                <td class="p-3 text-left border border-gray-300 text-xs">EMAIL_CLAIMANT_HK_LAW</td>
-                <td class="p-3 text-left border border-gray-300" id="kv-hk-law"></td>
-                <td class="p-3 text-left border border-gray-300" id="status-hk-law"></td>
-            </tr>
-            <tr>
-                <td class="p-3 text-left border border-gray-300">Lessel</td>
-                <td class="p-3 text-left border border-gray-300 text-xs">EMAIL_CLAIMANT_LESSEL</td>
-                <td class="p-3 text-left border border-gray-300" id="kv-lessel"></td>
-                <td class="p-3 text-left border border-gray-300" id="status-lessel"></td>
-            </tr>
-            <tr>
-                <td class="p-3 text-left border border-gray-300">Liu</td>
-                <td class="p-3 text-left border border-gray-300 text-xs">EMAIL_CLAIMANT_LIU</td>
-                <td class="p-3 text-left border border-gray-300" id="kv-liu"></td>
-                <td class="p-3 text-left border border-gray-300" id="status-liu"></td>
-            </tr>
-            <tr>
-                <td class="p-3 text-left border border-gray-300">Rentify</td>
-                <td class="p-3 text-left border border-gray-300 text-xs">EMAIL_CLAIMANT_RENTIFY</td>
-                <td class="p-3 text-left border border-gray-300" id="kv-rentify"></td>
-                <td class="p-3 text-left border border-gray-300" id="status-rentify"></td>
-            </tr>
-        </table>
-
-        <h3 class="text-xl font-semibold mt-6 text-gray-600">Defendants (5 KV Namespaces)</h3>
-        <table class="w-full border-collapse my-4">
-            <tr>
-                <th class="p-3 text-left border border-gray-300 bg-gray-100 font-semibold">Category</th>
-                <th class="p-3 text-left border border-gray-300 bg-gray-100 font-semibold">KV Namespace</th>
-                <th class="p-3 text-left border border-gray-300 bg-gray-100 font-semibold">Email Count</th>
-                <th class="p-3 text-left border border-gray-300 bg-gray-100 font-semibold">Status</th>
-            </tr>
-            <tr>
-                <td class="p-3 text-left border border-gray-300">Defendant (General)</td>
-                <td class="p-3 text-left border border-gray-300 text-xs">EMAIL_DEFENDANTS_DEFENDANT</td>
-                <td class="p-3 text-left border border-gray-300" id="kv-defendant"></td>
-                <td class="p-3 text-left border border-gray-300" id="status-defendant"></td>
-            </tr>
-            <tr>
-                <td class="p-3 text-left border border-gray-300">Both Defendants</td>
-                <td class="p-3 text-left border border-gray-300 text-xs">EMAIL_DEFENDANTS_BOTH_DEFENDANTS</td>
-                <td class="p-3 text-left border border-gray-300" id="kv-both-defendants"></td>
-                <td class="p-3 text-left border border-gray-300" id="status-both-defendants"></td>
-            </tr>
-            <tr>
-                <td class="p-3 text-left border border-gray-300">Barristers</td>
-                <td class="p-3 text-left border border-gray-300 text-xs">EMAIL_DEFENDANTS_BARRISTERS</td>
-                <td class="p-3 text-left border border-gray-300" id="kv-barristers"></td>
-                <td class="p-3 text-left border border-gray-300" id="status-barristers"></td>
-            </tr>
-            <tr>
-                <td class="p-3 text-left border border-gray-300">Litigant in Person Only</td>
-                <td class="p-3 text-left border border-gray-300 text-xs">EMAIL_DEFENDANTS_LITIGANT_IN_PERSON_ONLY</td>
-                <td class="p-3 text-left border border-gray-300" id="kv-litigant-person"></td>
-                <td class="p-3 text-left border border-gray-300" id="status-litigant-person"></td>
-            </tr>
-            <tr>
-                <td class="p-3 text-left border border-gray-300">MobiCycle OÜ Only</td>
-                <td class="p-3 text-left border border-gray-300 text-xs">EMAIL_DEFENDANTS_MOBICYCLE_OU_ONLY</td>
-                <td class="p-3 text-left border border-gray-300" id="kv-mobicycle-ou"></td>
-                <td class="p-3 text-left border border-gray-300" id="status-mobicycle-ou"></td>
-            </tr>
-        </table>
-
-        <h3 class="text-xl font-semibold mt-6 text-gray-600">Government (3 KV Namespaces)</h3>
-        <table class="w-full border-collapse my-4">
-            <tr>
-                <th class="p-3 text-left border border-gray-300 bg-gray-100 font-semibold">Department</th>
-                <th class="p-3 text-left border border-gray-300 bg-gray-100 font-semibold">KV Namespace</th>
-                <th class="p-3 text-left border border-gray-300 bg-gray-100 font-semibold">Email Count</th>
-                <th class="p-3 text-left border border-gray-300 bg-gray-100 font-semibold">Status</th>
-            </tr>
-            <tr>
-                <td class="p-3 text-left border border-gray-300">UK Legal Department</td>
-                <td class="p-3 text-left border border-gray-300 text-xs">EMAIL_GOVERNMENT_UK_LEGAL_DEPARTMENT</td>
-                <td class="p-3 text-left border border-gray-300" id="kv-uk-legal"></td>
-                <td class="p-3 text-left border border-gray-300" id="status-uk-legal"></td>
-            </tr>
-            <tr>
-                <td class="p-3 text-left border border-gray-300">Estonia</td>
-                <td class="p-3 text-left border border-gray-300 text-xs">EMAIL_GOVERNMENT_ESTONIA</td>
-                <td class="p-3 text-left border border-gray-300" id="kv-estonia"></td>
-                <td class="p-3 text-left border border-gray-300" id="status-estonia"></td>
-            </tr>
-            <tr>
-                <td class="p-3 text-left border border-gray-300">US State Department</td>
-                <td class="p-3 text-left border border-gray-300 text-xs">EMAIL_GOVERNMENT_US_STATE_DEPARTMENT</td>
-                <td class="p-3 text-left border border-gray-300" id="kv-us-state"></td>
-                <td class="p-3 text-left border border-gray-300" id="status-us-state"></td>
-            </tr>
-        </table>
-
-        <h3 class="text-xl font-semibold mt-6 text-gray-600">Reconsideration Procedures (7 KV Namespaces)</h3>
-        <table class="w-full border-collapse my-4">
-            <tr>
-                <th class="p-3 text-left border border-gray-300 bg-gray-100 font-semibold">Procedure</th>
-                <th class="p-3 text-left border border-gray-300 bg-gray-100 font-semibold">KV Namespace</th>
-                <th class="p-3 text-left border border-gray-300 bg-gray-100 font-semibold">Email Count</th>
-                <th class="p-3 text-left border border-gray-300 bg-gray-100 font-semibold">Status</th>
-            </tr>
-            <tr>
-                <td class="p-3 text-left border border-gray-300">Single Judge</td>
-                <td class="p-3 text-left border border-gray-300 text-xs">EMAIL_RECONSIDERATION_SINGLE_JUDGE</td>
-                <td class="p-3 text-left border border-gray-300" id="kv-single-judge"></td>
-                <td class="p-3 text-left border border-gray-300" id="status-single-judge"></td>
-            </tr>
-            <tr>
-                <td class="p-3 text-left border border-gray-300">Court Officer Review</td>
-                <td class="p-3 text-left border border-gray-300 text-xs">EMAIL_RECONSIDERATION_COURT_OFFICER_REVIEW</td>
-                <td class="p-3 text-left border border-gray-300" id="kv-court-officer"></td>
-                <td class="p-3 text-left border border-gray-300" id="status-court-officer"></td>
-            </tr>
-            <tr>
-                <td class="p-3 text-left border border-gray-300">PTA Refusal</td>
-                <td class="p-3 text-left border border-gray-300 text-xs">EMAIL_RECONSIDERATION_PTA_REFUSAL</td>
-                <td class="p-3 text-left border border-gray-300" id="kv-pta-refusal"></td>
-                <td class="p-3 text-left border border-gray-300" id="status-pta-refusal"></td>
-            </tr>
-            <tr>
-                <td class="p-3 text-left border border-gray-300">CPR 52.24(5)</td>
-                <td class="p-3 text-left border border-gray-300 text-xs">EMAIL_RECONSIDERATION_CPR52_24_5</td>
-                <td class="p-3 text-left border border-gray-300" id="kv-cpr52-24-5"></td>
-                <td class="p-3 text-left border border-gray-300" id="status-cpr52-24-5"></td>
-            </tr>
-            <tr>
-                <td class="p-3 text-left border border-gray-300">CPR 52.24(6)</td>
-                <td class="p-3 text-left border border-gray-300 text-xs">EMAIL_RECONSIDERATION_CPR52_24_6</td>
-                <td class="p-3 text-left border border-gray-300" id="kv-cpr52-24-6"></td>
-                <td class="p-3 text-left border border-gray-300" id="status-cpr52-24-6"></td>
-            </tr>
-            <tr>
-                <td class="p-3 text-left border border-gray-300">CPR 52.30</td>
-                <td class="p-3 text-left border border-gray-300 text-xs">EMAIL_RECONSIDERATION_CPR52_30</td>
-                <td class="p-3 text-left border border-gray-300" id="kv-cpr52-30"></td>
-                <td class="p-3 text-left border border-gray-300" id="status-cpr52-30"></td>
-            </tr>
-            <tr>
-                <td class="p-3 text-left border border-gray-300">PD52B</td>
-                <td class="p-3 text-left border border-gray-300 text-xs">EMAIL_RECONSIDERATION_PD52B</td>
-                <td class="p-3 text-left border border-gray-300" id="kv-pd52b"></td>
-                <td class="p-3 text-left border border-gray-300" id="status-pd52b"></td>
-            </tr>
-        </table>
-    </div>
-
-    <div id="kvraw" class="hidden">
-        <div class="mt-8 space-y-2">
-            <h2 class="text-lg font-semibold leading-7 text-gray-900">Email Folders</h2>
-            <p class="text-sm text-gray-600">ProtonMail folder organization and email counts</p>
-        </div>
-
-        <div class="bg-purple-50 border-l-4 border-purple-500 p-4 mt-4">
-            <p class="text-sm text-gray-700"><strong>Total Folders:</strong> <span id="total-folders-display">-</span> | <strong>Total Emails (deduplicated):</strong> <span id="total-emails-display">-</span></p>
-        </div>
-
-        <div id="folders-by-group">
-            <p class="text-center text-gray-500 italic">Loading folders...</p>
-        </div>
-    </div>
-
-    <div id="kvfiltered" class="hidden">
-        <div class="mt-8 space-y-2">
-            <h2 class="text-lg font-semibold leading-7 text-gray-900">Email Whitelist</h2>
-            <p class="text-sm text-gray-600">Approved senders and domains for email processing</p>
-        </div>
-
-        <div class="bg-green-50 border-l-4 border-green-500 p-4 mt-4">
-            <p class="text-sm text-gray-700">Only emails from whitelisted sources are processed and stored in KV namespaces.</p>
-        </div>
-
-        <div id="whitelist-list">
-            <p class="text-center text-gray-500 italic">Loading whitelist...</p>
-        </div>
-    </div>
-
-    <div id="kvfolders" class="hidden">
-        <div class="mt-8 space-y-2">
-            <h2 class="text-lg font-semibold leading-7 text-gray-900">KV Namespaces</h2>
-            <p class="text-sm text-gray-600">Email distribution across 35 categorized storage namespaces</p>
-        </div>
-
-        <div class="bg-purple-50 border-l-4 border-purple-500 p-4 mt-4">
-            <p class="text-sm text-gray-700">Emails transferred from ProtonMail Bridge to categorized Cloudflare KV storage by legal type, jurisdiction, and institution.</p>
-        </div>
-
-        <div id="kvnamespaces-list">
-            <p class="text-center text-gray-500 italic">Loading KV namespaces...</p>
-        </div>
-    </div>
-
-    <div id="endpoints" class="hidden">
-        <h2 class="text-2xl font-semibold mt-8 text-gray-700">API Endpoints</h2>
-
-        <div class="bg-green-50 border-l-4 border-green-500 p-4 my-4">
-            <p class="text-sm text-gray-700"><strong>Base URL:</strong> https://workflow-email.mobicycle-ou.workers.dev</p>
-            <p class="text-sm text-gray-700"><strong>Auth Token:</strong> ?token=mobicycle-workflows-2026</p>
-        </div>
-
-        <h3 class="text-xl font-semibold mt-6 text-gray-600">Dashboard & Status</h3>
-        <table class="w-full border-collapse my-4">
-            <tr>
-                <th class="p-3 text-left border border-gray-300 bg-gray-100 font-semibold">Endpoint</th>
-                <th class="p-3 text-left border border-gray-300 bg-gray-100 font-semibold">Method</th>
-                <th class="p-3 text-left border border-gray-300 bg-gray-100 font-semibold">Description</th>
-            </tr>
-            <tr>
-                <td class="p-3 text-left border border-gray-300"><code class="text-xs">/dashboard</code></td>
-                <td class="p-3 text-left border border-gray-300"><span class="bg-blue-100 text-blue-800 px-2 py-1 rounded text-xs">GET</span></td>
-                <td class="p-3 text-left border border-gray-300">This dashboard interface</td>
-            </tr>
-            <tr>
-                <td class="p-3 text-left border border-gray-300"><code class="text-xs">/api/health</code></td>
-                <td class="p-3 text-left border border-gray-300"><span class="bg-blue-100 text-blue-800 px-2 py-1 rounded text-xs">GET</span></td>
-                <td class="p-3 text-left border border-gray-300">Overall system health status</td>
-            </tr>
-            <tr>
-                <td class="p-3 text-left border border-gray-300"><code class="text-xs">/api/answers</code></td>
-                <td class="p-3 text-left border border-gray-300"><span class="bg-blue-100 text-blue-800 px-2 py-1 rounded text-xs">GET</span></td>
-                <td class="p-3 text-left border border-gray-300">All 54 universal question answers</td>
-            </tr>
-            <tr>
-                <td class="p-3 text-left border border-gray-300"><code class="text-xs">/api/cron-status</code></td>
-                <td class="p-3 text-left border border-gray-300"><span class="bg-blue-100 text-blue-800 px-2 py-1 rounded text-xs">GET</span></td>
-                <td class="p-3 text-left border border-gray-300">CRON job statuses (monitoring, fetching, sorting, categorization)</td>
-            </tr>
-            <tr>
-                <td class="p-3 text-left border border-gray-300"><code class="text-xs">/api/phase1-status</code></td>
-                <td class="p-3 text-left border border-gray-300"><span class="bg-blue-100 text-blue-800 px-2 py-1 rounded text-xs">GET</span></td>
-                <td class="p-3 text-left border border-gray-300">Phase 1 email collection status (5 steps)</td>
-            </tr>
-        </table>
-
-        <h3 class="text-xl font-semibold mt-6 text-gray-600">Actions</h3>
-        <table class="w-full border-collapse my-4">
-            <tr>
-                <th class="p-3 text-left border border-gray-300 bg-gray-100 font-semibold">Endpoint</th>
-                <th class="p-3 text-left border border-gray-300 bg-gray-100 font-semibold">Method</th>
-                <th class="p-3 text-left border border-gray-300 bg-gray-100 font-semibold">Description</th>
-            </tr>
-            <tr>
-                <td class="p-3 text-left border border-gray-300"><code class="text-xs">/trigger-phase1</code></td>
-                <td class="p-3 text-left border border-gray-300"><span class="bg-green-100 text-green-800 px-2 py-1 rounded text-xs">POST</span></td>
-                <td class="p-3 text-left border border-gray-300">Manually trigger Phase 1 email collection</td>
-            </tr>
-            <tr>
-                <td class="p-3 text-left border border-gray-300"><code class="text-xs">/trigger</code></td>
-                <td class="p-3 text-left border border-gray-300"><span class="bg-green-100 text-green-800 px-2 py-1 rounded text-xs">POST</span></td>
-                <td class="p-3 text-left border border-gray-300">Trigger full email triage workflow</td>
-            </tr>
-        </table>
-
-        <h3 class="text-xl font-semibold mt-6 text-gray-600">Bridge Integration (https://imap.mobicycle.ee)</h3>
-        <table class="w-full border-collapse my-4">
-            <tr>
-                <th class="p-3 text-left border border-gray-300 bg-gray-100 font-semibold">Endpoint</th>
-                <th class="p-3 text-left border border-gray-300 bg-gray-100 font-semibold">Method</th>
-                <th class="p-3 text-left border border-gray-300 bg-gray-100 font-semibold">Description</th>
-            </tr>
-            <tr>
-                <td class="p-3 text-left border border-gray-300"><code class="text-xs">/fetch-emails</code></td>
-                <td class="p-3 text-left border border-gray-300"><span class="bg-green-100 text-green-800 px-2 py-1 rounded text-xs">POST</span></td>
-                <td class="p-3 text-left border border-gray-300">Fetch emails from ProtonMail Bridge (port 4000)</td>
-            </tr>
-            <tr>
-                <td class="p-3 text-left border border-gray-300"><code class="text-xs">/send-email</code></td>
-                <td class="p-3 text-left border border-gray-300"><span class="bg-green-100 text-green-800 px-2 py-1 rounded text-xs">POST</span></td>
-                <td class="p-3 text-left border border-gray-300">Send emails via ProtonMail Bridge</td>
-            </tr>
-            <tr>
-                <td class="p-3 text-left border border-gray-300"><code class="text-xs">/email-count</code></td>
-                <td class="p-3 text-left border border-gray-300"><span class="bg-blue-100 text-blue-800 px-2 py-1 rounded text-xs">GET</span></td>
-                <td class="p-3 text-left border border-gray-300">Get total email count in inbox</td>
-            </tr>
-            <tr>
-                <td class="p-3 text-left border border-gray-300"><code class="text-xs">/health</code></td>
-                <td class="p-3 text-left border border-gray-300"><span class="bg-blue-100 text-blue-800 px-2 py-1 rounded text-xs">GET</span></td>
-                <td class="p-3 text-left border border-gray-300">Bridge service health status</td>
-            </tr>
-        </table>
-
-        <h3 class="text-xl font-semibold mt-6 text-gray-600">Example cURL Commands</h3>
-        <div class="bg-gray-50 p-4 rounded border border-gray-300 my-4">
-            <p class="font-mono text-sm mb-2"><span class="text-gray-500"># Check system health</span></p>
-            <p class="font-mono text-xs bg-white p-2 rounded border">curl "https://workflow-email.mobicycle-ou.workers.dev/api/health?token=mobicycle-workflows-2026"</p>
-
-            <p class="font-mono text-sm mb-2 mt-4"><span class="text-gray-500"># Get Phase 1 status</span></p>
-            <p class="font-mono text-xs bg-white p-2 rounded border">curl "https://workflow-email.mobicycle-ou.workers.dev/api/phase1-status?token=mobicycle-workflows-2026"</p>
-
-            <p class="font-mono text-sm mb-2 mt-4"><span class="text-gray-500"># Trigger Phase 1</span></p>
-            <p class="font-mono text-xs bg-white p-2 rounded border">curl -X POST "https://workflow-email.mobicycle-ou.workers.dev/trigger-phase1?token=mobicycle-workflows-2026"</p>
-
-            <p class="font-mono text-sm mb-2 mt-4"><span class="text-gray-500"># Fetch emails from Bridge</span></p>
-            <p class="font-mono text-xs bg-white p-2 rounded border">curl -X POST "https://imap.mobicycle.ee/fetch-emails" -H "Content-Type: application/json" -d '{"account":"rose@mobicycle.ee","limit":50}'</p>
         </div>
     </div>
 
     <script>
-        function toggleGroup(groupId) {
-            const element = document.getElementById(groupId);
-            if (element.classList.contains('hidden')) {
-                element.classList.remove('hidden');
-            } else {
-                element.classList.add('hidden');
-            }
-        }
-
         function switchTab(tabName) {
             // Hide all tabs
-            document.getElementById('localhost4000').classList.add('hidden');
-            document.getElementById('localhost4000').classList.remove('block');
-            document.getElementById('localhost1143').classList.add('hidden');
-            document.getElementById('localhost1143').classList.remove('block');
-            document.getElementById('kvraw').classList.add('hidden');
-            document.getElementById('kvraw').classList.remove('block');
-            document.getElementById('kvfiltered').classList.add('hidden');
-            document.getElementById('kvfiltered').classList.remove('block');
-            document.getElementById('kvfolders').classList.add('hidden');
-            document.getElementById('kvfolders').classList.remove('block');
-            document.getElementById('endpoints').classList.add('hidden');
-            document.getElementById('endpoints').classList.remove('block');
-
-            // Remove active state from all buttons
-            ['tab-localhost4000', 'tab-localhost1143', 'tab-kvraw', 'tab-kvfiltered', 'tab-kvfolders', 'tab-endpoints'].forEach(id => {
-                const btn = document.getElementById(id);
-                // Remove active classes
-                btn.classList.remove('bg-blue-100', 'text-blue-700', 'border-blue-500');
-                // Add inactive classes
-                btn.classList.add('bg-transparent', 'text-gray-600', 'border-transparent');
+            const tabs = ['localhost4000', 'localhost1143', 'kvraw', 'kvfiltered', 'kvfolders'];
+            tabs.forEach(tab => {
+                const element = document.getElementById(tab);
+                element.classList.add('hidden');
+                element.classList.remove('block');
+                
+                const button = document.getElementById(`tab-${tab}`);
+                button.classList.remove('border-blue-500', 'text-blue-600');
+                button.classList.add('border-transparent', 'text-gray-500');
             });
 
             // Show selected tab
-            document.getElementById(tabName).classList.remove('hidden');
-            document.getElementById(tabName).classList.add('block');
+            const selectedTab = document.getElementById(tabName);
+            selectedTab.classList.remove('hidden');
+            selectedTab.classList.add('block');
+            
+            const selectedButton = document.getElementById(`tab-${tabName}`);
+            selectedButton.classList.remove('border-transparent', 'text-gray-500');
+            selectedButton.classList.add('border-blue-500', 'text-blue-600');
 
-            // Add active state to clicked button
-            const activeBtn = document.getElementById('tab-' + tabName);
-            // Remove inactive classes
-            activeBtn.classList.remove('bg-transparent', 'text-gray-600', 'border-transparent');
-            // Add active classes
-            activeBtn.classList.add('bg-blue-100', 'text-blue-700', 'border-blue-500');
-
-            // Load data when switching tabs
-            if (tabName === 'whitelist') {
-                loadWhitelist();
-            } else if (tabName === 'kvnamespaces') {
-                loadKVNamespaces();
-            }
-
-            // Load folder data when switching to folders tab
-            if (tabName === 'folders') {
-                loadFolderData();
-            }
+            // Load tab content
+            loadTabContent(tabName);
         }
 
-        // Status evaluation function - returns 'green', 'yellow', or 'red'
-        function getQuestionStatus(questionId, answer, data) {
-            // Q1, Q7, Q10, Q12: Bridge/Tunnel running checks
-            if (['q1', 'q7', 'q10', 'q12'].includes(questionId)) {
-                return answer.startsWith('Yes') ? 'green' : 'red';
-            }
-            // Q15, Q20, Q22, Q23, Q29, Q33: Issues/failures
-            if (['q15', 'q20', 'q22', 'q23', 'q29', 'q33'].includes(questionId)) {
-                return answer === 'No' ? 'green' : 'red';
-            }
-            // Q14, Q17, Q18, Q19, Q24, Q26, Q28, Q30, Q32: Unknown/N/A checks
-            if (['q14', 'q17', 'q18', 'q19', 'q24', 'q26', 'q28', 'q30', 'q32'].includes(questionId)) {
-                if (answer === 'Unknown' || answer === 'N/A') return 'yellow';
-                return 'green';
-            }
-            // Q27: Email retrieval
-            if (questionId === 'q27') {
-                return answer === 'Yes' ? 'green' : 'yellow';
-            }
-            // All other questions default to green (informational)
-            return 'green';
-        }
-
-        // Answer functions for each question
-        const answerQ1 = (data) => data.bridge?.running ? 'Yes - Connected' : 'No - Disconnected';
-        const answerQ2 = (data) => data.tunnel?.url || 'imap.mobicycle.ee';
-        const answerQ3 = (data) => 'Yes - Waiting for next CRON trigger';
-        const answerQ4 = (data) => 'CRON trigger (4-stage: monitoring, fetching, sorting, categorization)';
-        const answerQ5 = (data) => data.errors || 'None';
-        const answerQ6 = (data) => '/Users/mobicycle/Library/Mobile Documents/com~apple~CloudDocs/9._MobiCycle_Technologies/workflows/email/mobicycle-ou';
-        const answerQ7 = (data) => data.bridge?.running ? 'Yes' : 'No';
-        const answerQ8 = (data) => '35 KV namespaces + EMAIL_TRIAGE workflow binding';
-        const answerQ9 = (data) => 'Cloudflare Workers Dashboard + This Dashboard';
-        const answerQ10 = (data) => data.localDiagnostics?.bridgeProcess?.running ? 'Yes' : 'No';
-        const answerQ11 = (data) => 'IMAP: 1143, SMTP: 1025';
-        const answerQ12 = (data) => data.tunnel?.up ? 'Yes' : 'No';
-        const answerQ13 = (data) => 'Tunnel to localhost:4000 via imap.mobicycle.ee';
-        const answerQ14 = (data) => data.localDiagnostics?.bridgeProcess?.lastRestart || 'Unknown';
-        const answerQ15 = (data) => data.localDiagnostics?.bridgeProcess?.unexpectedRestart ? 'Yes' : 'No';
-        const answerQ16 = (data) => data.localDiagnostics?.bridgeProcess?.cpuMemUsage || 'Normal';
-        const answerQ17 = (data) => data.bridge?.authenticated ? 'Yes' : 'Unknown';
-        const answerQ18 = (data) => data.bridge?.encryptedSession ? 'Yes' : 'Unknown';
-        const answerQ19 = (data) => data.bridge?.authFailures || 'None';
-        const answerQ20 = (data) => data.bridge?.connectionIssues ? 'Yes' : 'No';
-        const answerQ21 = (data) => data.tunnel?.reconnects || 'None detected';
-        const answerQ22 = (data) => data.tunnel?.degraded ? 'Yes' : 'No';
-        const answerQ23 = (data) => data.tunnel?.ingressChanged ? 'Yes' : 'No';
-        const answerQ24 = (data) => data.tunnel?.dnsAligned ? 'Yes' : 'Unknown';
-        const answerQ25 = (data) => data.tunnel?.packetLoss || '0%';
-        const answerQ26 = (data) => data.tunnel?.tlsOk ? 'Yes' : 'Unknown';
-        const answerQ27 = (data) => data.cron?.fetchingSuccess ? 'Yes' : 'Check CRON status';
-        const answerQ28 = (data) => data.cron?.successRate || 'N/A';
-        const answerQ29 = (data) => data.cron?.failures || 'None';
-        const answerQ30 = (data) => data.metrics?.latency || 'N/A';
-        const answerQ31 = (data) => data.email?.corruption ? 'No - Issues detected' : 'Yes';
-        const answerQ32 = (data) => data.email?.attachments ? 'Yes' : 'Unknown';
-        const answerQ33 = (data) => data.email?.duplicates ? 'Yes' : 'No';
-        const answerQ34 = (data) => data.workflow?.failingStep || 'None';
-        const answerQ35 = (data) => 'Yes - Already configured';
-        const answerQ36 = (data) => 'This dashboard checks status';
-        const answerQ37 = (data) => 'CRON triggers automatically';
-        const answerQ38 = (data) => 'Yes - This page';
-        const answerQ39 = (data) => 'Fetch → Sort → Categorize → Distribute to KV';
-        const answerQ40 = (data) => 'Yes - Available at mobicycle (US) and mobicycle-productions';
-        const answerQ41 = (data) => 'Workflows already structured and deployed';
-        const answerQ42 = (data) => 'Not needed - using Cloudflare CRON';
-        const answerQ43 = (data) => 'Yes - Already configured';
-        const answerQ44 = (data) => 'cloudflared runs as service';
-        const answerQ45 = (data) => 'Already in auto-start';
-        const answerQ46 = (data) => 'Not needed - workflow handles polling';
-        const answerQ47 = (data) => 'Yes - Bridge runs on Mac';
-        const answerQ48 = (data) => 'Usually on/sleeping';
-        const answerQ49 = (data) => 'Not currently';
-        const answerQ50 = (data) => 'Not needed with current setup';
-        const answerQ51 = (data) => 'Configured to run within free tier limits';
-        const answerQ52 = (data) => 'Check CRON status section above';
-        const answerQ53 = (data) => 'Yes - Shown in CRON Jobs section';
-        const answerQ54 = (data) => 'Yes - Already tracked separately';
-
-        async function loadDashboard() {
+        async function loadTabContent(tabName) {
+            const token = 'mobicycle-workflows-2026';
+            
             try {
-                // Get token from URL
-                const urlParams = new URLSearchParams(window.location.search);
-                const token = urlParams.get('token') || 'mobicycle-workflows-2026';
-
-                const healthResponse = await fetch(`/api/health?token=${token}`);
-                const healthData = await healthResponse.json();
-
-                // Update health status
-                const healthDiv = document.getElementById('health-status');
-                const statusClass = healthData.overall === 'healthy' ? 'bg-green-100 text-green-800' :
-                                   healthData.overall === 'degraded' ? 'bg-yellow-100 text-yellow-800' :
-                                   'bg-red-100 text-red-800';
-                healthDiv.className = `inline-block px-3 py-1 rounded ${statusClass}`;
-                healthDiv.textContent = `Overall Status: ${healthData.overall.toUpperCase()}`;
-
-                // Fetch answers from the new API endpoint
-                const answersResponse = await fetch(`/api/answers?token=${token}`);
-                const answers = await answersResponse.json();
-
-                // Update all answers from the structured response
-                Object.keys(answers).forEach(groupKey => {
-                    const group = answers[groupKey];
-                    Object.keys(group).forEach(questionKey => {
-                        const element = document.getElementById(questionKey);
-                        const statusElement = document.getElementById(`${questionKey}-status`);
-                        if (element) {
-                            const answer = group[questionKey];
-                            element.textContent = answer;
-
-                            // Add status indicator if status cell exists
-                            if (statusElement) {
-                                const status = getQuestionStatus(questionKey, answer, healthData);
-                                const statusColors = {
-                                    'green': 'bg-green-500',
-                                    'yellow': 'bg-yellow-500',
-                                    'red': 'bg-red-500'
-                                };
-                                statusElement.innerHTML = `<div class="w-6 h-6 rounded-full mx-auto ${statusColors[status]}"></div>`;
-                            }
-                        }
-                    });
-                });
-
-                // Load CRON job statuses from KV
-                await loadCronStatuses();
-
-                // Load Phase 1 status
-                await loadPhase1Status();
-
-                // Load Email Workflow data
-                await loadEmailWorkflow(token);
-
-                // Load Email Calculations
-                await loadEmailCalculations(token);
-
-            } catch (error) {
-                console.error('Failed to load dashboard:', error);
-                document.getElementById('health-status').innerHTML = '<span class="status down">ERROR: Cannot connect to worker</span>';
-            }
-        }
-
-        async function loadPhase1Status() {
-            try {
-                const urlParams = new URLSearchParams(window.location.search);
-                const token = urlParams.get('token') || 'mobicycle-workflows-2026';
-
-                // Fetch folder count from bridge
-                try {
-                    const foldersResponse = await fetch('https://imap.mobicycle.ee/list-folders');
-                    if (foldersResponse.ok) {
+                switch(tabName) {
+                    case 'localhost4000':
+                        const healthResponse = await fetch(`/health?token=${token}`);
+                        const healthData = await healthResponse.json();
+                        document.getElementById('backend-status').innerHTML = `
+                            <div class="flex items-center space-x-2">
+                                <div class="w-3 h-3 bg-${healthData.overall === 'healthy' ? 'green' : 'red'}-500 rounded-full"></div>
+                                <span>Status: ${healthData.overall}</span>
+                            </div>
+                            <p class="text-sm mt-2">Bridge: ${healthData.bridge?.status || 'Unknown'}</p>
+                            <p class="text-sm">Tunnel: ${healthData.tunnel?.status || 'Unknown'}</p>
+                        `;
+                        break;
+                        
+                    case 'localhost1143':
+                        document.getElementById('bridge-status').innerHTML = 'ProtonMail Bridge connection details...';
+                        break;
+                        
+                    case 'kvraw':
+                        const rawResponse = await fetch(`/api/kv-emails/raw-data?token=${token}&limit=5`);
+                        const rawData = await rawResponse.json();
+                        document.getElementById('raw-data-status').innerHTML = `Total emails: ${rawData.count || 0}`;
+                        document.getElementById('raw-data-content').innerHTML = rawData.emails ? 
+                            rawData.emails.map(email => `
+                                <div class="border p-3 rounded mb-2">
+                                    <div class="font-medium">${email.key}</div>
+                                    <div class="text-xs text-gray-500">From: ${email.data.from}</div>
+                                    <div class="text-xs text-gray-500">Subject: ${email.data.subject}</div>
+                                </div>
+                            `).join('') : 'No emails found';
+                        break;
+                        
+                    case 'kvfiltered':
+                        const filteredResponse = await fetch(`/api/kv-emails/filtered-data?token=${token}&limit=5`);
+                        const filteredData = await filteredResponse.json();
+                        document.getElementById('filtered-data-status').innerHTML = `Total emails: ${filteredData.count || 0}`;
+                        document.getElementById('filtered-data-content').innerHTML = filteredData.emails ? 
+                            filteredData.emails.map(email => `
+                                <div class="border p-3 rounded mb-2">
+                                    <div class="font-medium">${email.key}</div>
+                                    <div class="text-xs text-gray-500">From: ${email.data.from}</div>
+                                    <div class="text-xs text-gray-500">Namespace: ${email.data.namespace}</div>
+                                </div>
+                            `).join('') : 'No emails found';
+                        break;
+                        
+                    case 'kvfolders':
+                        const foldersResponse = await fetch(`/api/kv-counts?token=${token}`);
                         const foldersData = await foldersResponse.json();
-                        document.getElementById('folders-count').textContent = foldersData.count || 0;
-                    }
-                } catch (e) {
-                    document.getElementById('folders-count').textContent = 'Error';
-                }
-
-                // Fetch available email count from ALL folders
-                try {
-                    const folderCountsResponse = await fetch('https://imap.mobicycle.ee/folder-counts');
-                    if (folderCountsResponse.ok) {
-                        const folderCountsData = await folderCountsResponse.json();
-                        // Use deduplicated total from "All Mail" folder
-                        document.getElementById('emails-available').textContent = folderCountsData.totalEmails || 0;
-                    }
-                } catch (e) {
-                    document.getElementById('emails-available').textContent = 'Error';
-                }
-
-                const response = await fetch(`/api/phase1-status?token=${token}`);
-                const phase1 = await response.json();
-
-                // Update email count statistics - ensure they are numbers
-                if (phase1.step1 && phase1.step1.emailsFetched !== undefined) {
-                    const fetchedCount = typeof phase1.step1.emailsFetched === 'number'
-                        ? phase1.step1.emailsFetched
-                        : parseInt(phase1.step1.emailsFetched) || 0;
-                    document.getElementById('emails-fetched').textContent = fetchedCount;
-                }
-                if (phase1.step2 && phase1.step2.emailsFiltered !== undefined) {
-                    const filteredCount = typeof phase1.step2.emailsFiltered === 'number'
-                        ? phase1.step2.emailsFiltered
-                        : parseInt(phase1.step2.emailsFiltered) || 0;
-                    document.getElementById('emails-whitelisted').textContent = filteredCount;
-                }
-
-                // Update each pipeline step status
-                for (let i = 1; i <= 5; i++) {
-                    const stepStatus = phase1[`step${i}`];
-                    const element = document.getElementById(`pipeline-${i}`);
-
-                    if (element && stepStatus) {
-                        const statusText = stepStatus.status === 'success' ? 'SUCCESS' :
-                                          stepStatus.status === 'error' ? 'ERROR' :
-                                          stepStatus.status === 'running' ? 'RUNNING' :
-                                          'NOT STARTED';
-
-                        const statusClass = stepStatus.status === 'success' ? 'bg-green-100 text-green-800' :
-                                           stepStatus.status === 'error' ? 'bg-red-100 text-red-800' :
-                                           stepStatus.status === 'running' ? 'bg-yellow-100 text-yellow-800' :
-                                           'bg-gray-100 text-gray-600';
-
-                        element.className = `p-3 text-left border border-gray-300`;
-                        element.innerHTML = `<span class="inline-block px-2 py-1 rounded text-xs font-semibold ${statusClass}">${statusText}</span>`;
-
-                        // Add timestamp if available
-                        if (stepStatus.timestamp) {
-                            const time = new Date(stepStatus.timestamp).toLocaleString();
-                            element.innerHTML += `<div class="text-xs text-gray-500 mt-1">${time}</div>`;
-                        }
-                    }
+                        document.getElementById('folders-status').innerHTML = `Total namespaces: ${foldersData.namespaces?.length || 0}`;
+                        document.getElementById('folders-content').innerHTML = foldersData.namespaces ? 
+                            foldersData.namespaces.filter(ns => ns.count > 0).map(ns => `
+                                <div class="border p-4 rounded">
+                                    <div class="font-medium">${ns.name}</div>
+                                    <div class="text-sm text-gray-500">${ns.category}</div>
+                                    <div class="text-lg font-bold text-blue-600">${ns.count} emails</div>
+                                </div>
+                            `).join('') : 'No folders with emails';
+                        break;
                 }
             } catch (error) {
-                console.error('Failed to load Phase 1 status:', error);
-                // Set all to NOT STARTED on error
-                for (let i = 1; i <= 5; i++) {
-                    const element = document.getElementById(`pipeline-${i}`);
-                    if (element) {
-                        element.innerHTML = '<span class="inline-block px-2 py-1 rounded text-xs font-semibold bg-gray-100 text-gray-600">NOT STARTED</span>';
-                    }
-                }
+                console.error('Error loading tab content:', error);
             }
         }
 
-        async function runPhase1() {
-            try {
-                const urlParams = new URLSearchParams(window.location.search);
-                const token = urlParams.get('token') || 'mobicycle-workflows-2026';
-
-                const statusDiv = document.getElementById('phase1-trigger-status');
-                statusDiv.innerHTML = '<span class="text-yellow-600">⏳ Running Phase 1...</span>';
-
-                const response = await fetch(`/trigger-phase1?token=${token}`, {
-                    method: 'POST'
-                });
-
-                if (response.ok) {
-                    statusDiv.innerHTML = '<span class="text-green-600">✅ Phase 1 triggered successfully</span>';
-                    // Reload status after 2 seconds
-                    setTimeout(() => {
-                        loadPhase1Status();
-                        statusDiv.innerHTML = '';
-                    }, 2000);
-                } else {
-                    statusDiv.innerHTML = '<span class="text-red-600">❌ Failed to trigger Phase 1</span>';
-                }
-            } catch (error) {
-                console.error('Failed to trigger Phase 1:', error);
-                document.getElementById('phase1-trigger-status').innerHTML = '<span class="text-red-600">❌ Error: ' + error.message + '</span>';
-            }
-        }
-
-        async function loadFolderData() {
-            try {
-                const response = await fetch('https://imap.mobicycle.ee/folder-counts');
-                if (!response.ok) {
-                    throw new Error('Failed to fetch folder data');
-                }
-
-                const data = await response.json();
-
-                // Build folder tree to identify parent folders with subfolders
-                const folderPaths = data.folderCounts.map(f => f.folder);
-                const hasSubfolders = (path) => {
-                    return folderPaths.some(p => p !== path && p.startsWith(path + '/'));
-                };
-
-                // Group folders by analyzing their structure
-                const groups = {};
-                let displayedFoldersCount = 0;
-                let displayedEmailsTotal = 0;
-
-                data.folderCounts.forEach(folder => {
-                    const name = folder.folder;
-
-                    // Skip Labels folders entirely
-                    if (name.startsWith('Labels/')) {
-                        return;
-                    }
-
-                    // Skip parent folders that have subfolders (to avoid duplication)
-                    if (hasSubfolders(name)) {
-                        return;
-                    }
-
-                    // Count this folder as displayed
-                    // Skip system folders entirely - don't display them
-                    if (name === 'INBOX' || name === 'All Mail' || name === 'Drafts' || name === 'Sent' || name === 'Spam' || name === 'Trash' || name === 'Archive' || name === 'Starred') {
-                        return;
-                    }
-
-                    displayedFoldersCount++;
-                    displayedEmailsTotal += folder.count;
-
-                    // Folders with "Folders/" prefix - extract the category
-                    if (name.startsWith('Folders/')) {
-                        const remainder = name.substring(8); // Remove "Folders/"
-                        const parts = remainder.split('/');
-                        const groupName = parts[0]; // First part after "Folders/"
-
-                        if (!groups[groupName]) groups[groupName] = [];
-                        groups[groupName].push(folder);
-                        return;
-                    }
-
-                    // Everything else goes to "Other"
-                    if (!groups['Other']) groups['Other'] = [];
-                    groups['Other'].push(folder);
-                });
-
-                // Calculate totals for each group and sort by total count
-                const groupsWithTotals = Object.entries(groups).map(([groupName, folders]) => {
-                    folders.sort((a, b) => b.count - a.count);
-                    const totalCount = folders.reduce((sum, f) => sum + f.count, 0);
-                    return { groupName, folders, totalCount };
-                }).filter(g => g.totalCount > 0); // Skip groups with 0 total emails
-
-                // Sort groups by total count descending (largest first)
-                groupsWithTotals.sort((a, b) => b.totalCount - a.totalCount);
-
-                // Update summary with displayed folder counts (MobiCycle Estonia only, not system-wide)
-                document.getElementById('total-folders-display').textContent = displayedFoldersCount;
-                document.getElementById('total-emails-display').textContent = displayedEmailsTotal.toLocaleString();
-
-                // Update tab count - show email count not folder count
-                document.getElementById('tab-folders-count').textContent = `(${displayedEmailsTotal.toLocaleString()})`;
-
-                // Build grouped HTML with collapsible sections
-                let html = '';
-                let groupIndex = 0;
-                for (const { groupName, folders, totalCount } of groupsWithTotals) {
-                    const groupId = `group-${groupIndex++}`;
-
-                    html += `<div class="my-6">`;
-                    html += `<div class="flex items-center justify-between bg-gray-100 p-4 cursor-pointer rounded hover:bg-gray-200" onclick="toggleGroup('${groupId}')">`;
-                    html += `<h3 class="text-xl font-bold text-gray-800">${groupName}</h3>`;
-                    html += `<span class="text-lg font-semibold text-gray-700">${totalCount.toLocaleString()} emails</span>`;
-                    html += `</div>`;
-                    html += `<div id="${groupId}" class="hidden mt-2">`;
-                    html += `<table class="w-full border-collapse mb-6">`;
-                    html += `<tr>`;
-                    html += `<th class="p-3 text-left border border-gray-300 bg-gray-100 font-semibold">Folder Name</th>`;
-                    html += `<th class="p-3 text-right border border-gray-300 bg-gray-100 font-semibold w-32">Email Count</th>`;
-                    html += `</tr>`;
-
-                    folders.forEach(folder => {
-                        // Skip folders with 0 emails
-                        if (folder.count === 0) return;
-
-                        const isHighlight = folder.folder === 'All Mail' || folder.folder === 'INBOX';
-                        const bgClass = isHighlight ? 'bg-yellow-50' : '';
-                        const fontClass = isHighlight ? 'font-semibold' : '';
-                        const displayName = folder.folder.replace('Folders/', '').replace('Labels/', '');
-                        html += `<tr class="${bgClass}">`;
-                        html += `<td class="p-3 text-left border border-gray-300 ${fontClass}">${displayName}</td>`;
-                        html += `<td class="p-3 text-right border border-gray-300 ${fontClass}">${folder.count.toLocaleString()}</td>`;
-                        html += `</tr>`;
-                    });
-
-                    html += `</table>`;
-                    html += `</div>`;
-                    html += `</div>`;
-                }
-
-                document.getElementById('folders-by-group').innerHTML = html;
-            } catch (error) {
-                console.error('Failed to load folder data:', error);
-                document.getElementById('folders-by-group').innerHTML = '<p class="text-center text-red-600">Error loading folders</p>';
-            }
-        }
-
-        async function loadWhitelist() {
-            try {
-                // Placeholder data for whitelist - will be populated from approved senders/domains
-                const whitelist = [
-                    { domain: '.court', description: 'UK Court System', emailCount: 1247, active: true },
-                    { domain: '@ico.org.uk', description: 'Information Commissioner\'s Office', emailCount: 856, active: true },
-                    { domain: '@hklaw.com', description: 'HK Law (Legal Representation)', emailCount: 634, active: true },
-                    { domain: '@lessel.co.uk', description: 'Lessel & Co (Legal Representation)', emailCount: 423, active: true },
-                    { domain: '.gov.uk', description: 'UK Government', emailCount: 312, active: true },
-                    { domain: '.ee', description: 'Estonian Government/Organizations', emailCount: 289, active: true },
-                    { domain: '@parliament.uk', description: 'UK Parliament', emailCount: 267, active: true },
-                    { domain: '@phso.org.uk', description: 'Parliamentary and Health Service Ombudsman', emailCount: 189, active: true }
-                ];
-
-                // Sort by number of emails received (descending)
-                whitelist.sort((a, b) => b.emailCount - a.emailCount);
-
-                let html = '<table class="w-full border-collapse">';
-                html += '<tr>';
-                html += '<th class="p-3 text-left border border-gray-300 bg-gray-100 font-semibold">Pattern</th>';
-                html += '<th class="p-3 text-left border border-gray-300 bg-gray-100 font-semibold">Description</th>';
-                html += '<th class="p-3 text-right border border-gray-300 bg-gray-100 font-semibold w-32">Actual</th>';
-                html += '<th class="p-3 text-right border border-gray-300 bg-gray-100 font-semibold w-32">Pending</th>';
-                html += '</tr>';
-
-                whitelist.forEach(item => {
-                    html += `<tr>`;
-                    html += `<td class="p-3 text-left border border-gray-300 font-mono font-semibold">${item.domain}</td>`;
-                    html += `<td class="p-3 text-left border border-gray-300">${item.description}</td>`;
-                    html += `<td class="p-3 text-right border border-gray-300 font-bold text-lg">${item.emailCount.toLocaleString()}</td>`;
-                    html += `<td class="p-3 text-right border border-gray-300 text-orange-600 font-semibold">0</td>`;
-                    html += `</tr>`;
-                });
-
-                html += '</table>';
-                document.getElementById('whitelist-list').innerHTML = html;
-
-                // Update tab count - total emails filtered by whitelist
-                const totalFilteredEmails = whitelist.reduce((sum, item) => sum + item.emailCount, 0);
-                document.getElementById('tab-whitelist-count').textContent = `(${totalFilteredEmails.toLocaleString()})`;
-            } catch (error) {
-                console.error('Failed to load whitelist:', error);
-                document.getElementById('whitelist-list').innerHTML = '<p class="text-center text-red-600">Error loading whitelist</p>';
-            }
-        }
-
-        async function loadKVNamespaces() {
-            try {
-                // Get token from URL
-                const urlParams = new URLSearchParams(window.location.search);
-                const token = urlParams.get('token') || 'mobicycle-workflows-2026';
-
-                // Fetch REAL KV counts, pending count, and inbox total in parallel
-                const [kvResponse, pendingResponse, inboxResponse] = await Promise.all([
-                    fetch(`/api/kv-counts?token=${token}`),
-                    fetch(`/api/pending-count?token=${token}`),
-                    fetch(`/api/inbox-count?token=${token}`)
-                ]);
-
-                const data = await kvResponse.json();
-                const pendingData = await pendingResponse.json();
-                const inboxData = await inboxResponse.json();
-                const globalPendingCount = pendingData.pending || 0;
-                const totalInboxCount = inboxData.total || 0;
-
-                const namespaces = data.namespaces.map(ns => ({
-                    category: ns.category,
-                    name: ns.name,
-                    emailCount: ns.count
-                }));
-
-                // OLD FAKE DATA REMOVED
-                /*const namespaces = [
-                    // Courts
-                    { category: 'Courts', name: 'Supreme Court', binding: 'EMAIL_COURTS_SUPREME_COURT', emailCount: 234 },
-                    { category: 'Courts', name: 'Court of Appeals - Civil Division', binding: 'EMAIL_COURTS_COURT_OF_APPEALS_CIVIL_DIVISION', emailCount: 189 },
-                    { category: 'Courts', name: 'Kings Bench Appeals Division', binding: 'EMAIL_COURTS_KINGS_BENCH_APPEALS_DIVISION', emailCount: 156 },
-                    { category: 'Courts', name: 'Chancery Division', binding: 'EMAIL_COURTS_CHANCERY_DIVISION', emailCount: 312 },
-                    { category: 'Courts', name: 'Administrative Court', binding: 'EMAIL_COURTS_ADMINISTRATIVE_COURT', emailCount: 145 },
-                    { category: 'Courts', name: 'Central London County Court', binding: 'EMAIL_COURTS_CENTRAL_LONDON_COUNTY_COURT', emailCount: 123 },
-                    { category: 'Courts', name: 'Clerkenwell County Court', binding: 'EMAIL_COURTS_CLERKENWELL_COUNTY_COURT', emailCount: 88 },
-                    // Complaints
-                    { category: 'Complaints', name: 'ICO', binding: 'EMAIL_COMPLAINTS_ICO', emailCount: 423 },
-                    { category: 'Complaints', name: 'PHSO', binding: 'EMAIL_COMPLAINTS_PHSO', emailCount: 267 },
-                    { category: 'Complaints', name: 'Parliament', binding: 'EMAIL_COMPLAINTS_PARLIAMENT', emailCount: 189 },
-                    { category: 'Complaints', name: 'HMCTS', binding: 'EMAIL_COMPLAINTS_HMCTS', emailCount: 134 },
-                    { category: 'Complaints', name: 'Bar Standards Board', binding: 'EMAIL_COMPLAINTS_BAR_STANDARDS_BOARD', emailCount: 56 },
-                    // Legal Expenses
-                    { category: 'Legal Expenses', name: 'Legal Fees - Claimant', binding: 'EMAIL_EXPENSES_LEGAL_FEES_CLAIMANT', emailCount: 89 },
-                    { category: 'Legal Expenses', name: 'Legal Fees - Company', binding: 'EMAIL_EXPENSES_LEGAL_FEES_COMPANY', emailCount: 67 },
-                    { category: 'Legal Expenses', name: 'Legal Fees - Director', binding: 'EMAIL_EXPENSES_LEGAL_FEES_DIRECTOR', emailCount: 45 },
-                    { category: 'Legal Expenses', name: 'Repairs', binding: 'EMAIL_EXPENSES_REPAIRS', emailCount: 23 },
-                    // Claimants
-                    { category: 'Claimants', name: 'HK Law', binding: 'EMAIL_CLAIMANT_HK_LAW', emailCount: 634 },
-                    { category: 'Claimants', name: 'Lessel', binding: 'EMAIL_CLAIMANT_LESSEL', emailCount: 423 },
-                    { category: 'Claimants', name: 'Liu', binding: 'EMAIL_CLAIMANT_LIU', emailCount: 178 },
-                    { category: 'Claimants', name: 'Rentify', binding: 'EMAIL_CLAIMANT_RENTIFY', emailCount: 234 },
-                    // Defendants
-                    { category: 'Defendants', name: 'Defendant', binding: 'EMAIL_DEFENDANTS_DEFENDANT', emailCount: 567 },
-                    { category: 'Defendants', name: 'Both Defendants', binding: 'EMAIL_DEFENDANTS_BOTH_DEFENDANTS', emailCount: 289 },
-                    { category: 'Defendants', name: 'Barristers', binding: 'EMAIL_DEFENDANTS_BARRISTERS', emailCount: 345 },
-                    { category: 'Defendants', name: 'Litigant in Person Only', binding: 'EMAIL_DEFENDANTS_LITIGANT_IN_PERSON_ONLY', emailCount: 156 },
-                    { category: 'Defendants', name: 'MobiCycle OÜ Only', binding: 'EMAIL_DEFENDANTS_MOBICYCLE_OU_ONLY', emailCount: 234 },
-                    // Government
-                    { category: 'Government', name: 'UK Legal Department', binding: 'EMAIL_GOVERNMENT_UK_LEGAL_DEPARTMENT', emailCount: 312 },
-                    { category: 'Government', name: 'Estonia', binding: 'EMAIL_GOVERNMENT_ESTONIA', emailCount: 856 },
-                    { category: 'Government', name: 'US State Department', binding: 'EMAIL_GOVERNMENT_US_STATE_DEPARTMENT', emailCount: 123 },
-                    // Reconsideration
-                    { category: 'Reconsideration', name: 'Single Judge', binding: 'EMAIL_RECONSIDERATION_SINGLE_JUDGE', emailCount: 78 },
-                    { category: 'Reconsideration', name: 'Court Officer Review', binding: 'EMAIL_RECONSIDERATION_COURT_OFFICER_REVIEW', emailCount: 56 },
-                    { category: 'Reconsideration', name: 'PTA Refusal', binding: 'EMAIL_RECONSIDERATION_PTA_REFUSAL', emailCount: 34 },
-                    { category: 'Reconsideration', name: 'CPR52.24(5)', binding: 'EMAIL_RECONSIDERATION_CPR52_24_5', emailCount: 23 },
-                    { category: 'Reconsideration', name: 'CPR52.24(6)', binding: 'EMAIL_RECONSIDERATION_CPR52_24_6', emailCount: 18 },
-                    { category: 'Reconsideration', name: 'CPR52.30', binding: 'EMAIL_RECONSIDERATION_CPR52_30', emailCount: 12 },
-                    { category: 'Reconsideration', name: 'PD52B', binding: 'EMAIL_RECONSIDERATION_PD52B', emailCount: 9 }
-                ];*/
-
-                // Sort by email count descending
-                namespaces.sort((a, b) => b.emailCount - a.emailCount);
-
-                // Group by category
-                const grouped = {};
-                namespaces.forEach(ns => {
-                    if (!grouped[ns.category]) {
-                        grouped[ns.category] = [];
-                    }
-                    grouped[ns.category].push(ns);
-                });
-
-                let html = '';
-
-                // Display each category
-                Object.entries(grouped).forEach(([category, items]) => {
-                    const totalCount = items.reduce((sum, item) => sum + item.emailCount, 0);
-                    const groupId = `kv-group-${category.toLowerCase().replace(/\s+/g, '-')}`;
-
-                    html += `<div class="my-6 overflow-hidden rounded-2xl bg-white shadow-lg shadow-slate-900/5 ring-1 ring-slate-900/10">`;
-                    html += `<table class="w-full table-fixed border-collapse">`;
-                    html += `<thead>`;
-                    html += `<tr class="bg-slate-50 cursor-pointer hover:bg-sky-50 transition-colors" onclick="toggleGroup('${groupId}')">`;
-                    html += `<th class="px-6 py-5 text-left font-display text-lg font-semibold text-slate-900">${category}</th>`;
-                    html += `<th class="px-6 py-5 text-right text-base font-semibold text-slate-700 w-32">${totalCount.toLocaleString()}</th>`;
-                    html += `<th class="px-6 py-5 text-right text-base font-semibold text-amber-600 w-32">${globalPendingCount.toLocaleString()}</th>`;
-                    html += `</tr>`;
-                    html += `</thead>`;
-                    html += `</table>`;
-                    html += `<div id="${groupId}" class="hidden">`;
-                    html += `<table class="w-full table-fixed border-collapse bg-white">`;
-                    html += `<thead>`;
-                    html += `<tr class="border-t border-slate-200">`;
-                    html += `<th class="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wider text-slate-500">Name</th>`;
-                    html += `<th class="px-6 py-3 text-right text-xs font-semibold uppercase tracking-wider text-slate-500 w-32">Actual</th>`;
-                    html += `<th class="px-6 py-3 text-right text-xs font-semibold uppercase tracking-wider text-slate-500 w-32">Pending</th>`;
-                    html += `</tr>`;
-                    html += `</thead>`;
-                    html += `<tbody>`;
-
-                    items.forEach(ns => {
-                        html += `<tr class="border-t border-slate-100 hover:bg-slate-50 transition-colors">`;
-                        html += `<td class="px-6 py-4 text-sm text-slate-900">${ns.name}</td>`;
-                        html += `<td class="px-6 py-4 text-right text-sm font-semibold text-slate-900">${ns.emailCount.toLocaleString()}</td>`;
-                        html += `<td class="px-6 py-4 text-right text-sm font-medium text-amber-600">${globalPendingCount.toLocaleString()}</td>`;
-                        html += `</tr>`;
-                    });
-
-                    html += `</tbody>`;
-                    html += `</table>`;
-                    html += `</div>`;
-                    html += `</div>`;
-                });
-
-                document.getElementById('kvnamespaces-list').innerHTML = html;
-
-                // Update tab count - ACTUAL/PENDING format
-                const totalTransferredEmails = namespaces.reduce((sum, ns) => sum + ns.emailCount, 0);
-                document.getElementById('tab-kvnamespaces-count').textContent = `(${totalTransferredEmails.toLocaleString()}/${globalPendingCount.toLocaleString()})`;
-            } catch (error) {
-                console.error('Failed to load transfers:', error);
-                document.getElementById('transfers-list').innerHTML = '<p class="text-center text-red-600">Error loading transfers</p>';
-            }
-        }
-
-        async function loadCronStatuses() {
-            try {
-                // Get token from URL
-                const urlParams = new URLSearchParams(window.location.search);
-                const token = urlParams.get('token') || 'mobicycle-workflows-2026';
-
-                const response = await fetch(`/api/cron-status?token=${token}`);
-                const jobs = await response.json();
-
-                ['monitoring', 'fetching', 'sorting', 'categorization'].forEach(jobType => {
-                    const job = jobs[jobType];
-                    if (job) {
-                        const lastRunText = job.timestamp ? `Last run: ${new Date(job.timestamp).toLocaleString()}` : 'Never run';
-                        document.getElementById(`${jobType}-last-run`).textContent = lastRunText;
-                        const statusEl = document.getElementById(`${jobType}-status`);
-                        const statusClass = job.status === 'completed' ? 'bg-green-100 text-green-800' :
-                                          job.status === 'running' ? 'bg-yellow-100 text-yellow-800' :
-                                          job.status === 'never_run' ? 'bg-gray-100 text-gray-800' :
-                                          'bg-red-100 text-red-800';
-                        statusEl.className = `inline-block px-2 py-1 rounded ${statusClass}`;
-                        statusEl.textContent = job.status.toUpperCase().replace('_', ' ');
-                    }
-                });
-            } catch (error) {
-                console.error('Failed to load CRON statuses:', error);
-            }
-        }
-
-        async function loadEmailWorkflow(token) {
-            try {
-                // Fetch inbox count
-                const inboxResponse = await fetch(`/api/inbox-count?token=${token}`);
-                const inboxData = await inboxResponse.json();
-                document.getElementById('inbox-total-emails').textContent = inboxData.total || 0;
-
-                // Fetch KV counts
-                const kvResponse = await fetch(`/api/kv-counts?token=${token}`);
-                const kvData = await kvResponse.json();
-                document.getElementById('kv-stored-count').textContent = kvData.total || 0;
-
-                // Fetch pending count
-                const pendingResponse = await fetch(`/api/pending-count?token=${token}`);
-                const pendingData = await pendingResponse.json();
-                const pending = pendingData.pending || 0;
-                const total = kvData.total || 0;
-                const processed = total - pending;
-
-                document.getElementById('kv-pending-count').textContent = pending;
-                document.getElementById('kv-processed-count').textContent = processed;
-
-                // Fetch health data for bridge status
-                const healthResponse = await fetch(`/api/health?token=${token}`);
-                const healthData = await healthResponse.json();
-                const bridgeStatus = healthData.bridge?.running ? 'Connected' : 'Offline';
-                document.getElementById('inbox-bridge-status').textContent = bridgeStatus;
-
-                // Calculate whitelist passed (for now, use Phase 1 step 2 data if available)
-                const phase1Response = await fetch(`/api/phase1-status?token=${token}`);
-                const phase1Data = await phase1Response.json();
-                const whitelistPassed = phase1Data.step2?.emailsFiltered || 0;
-                document.getElementById('whitelist-passed-count').textContent = whitelistPassed;
-
-                // Whitelist pattern count (hardcoded for now - should come from whitelist-worker)
-                document.getElementById('whitelist-pattern-count').textContent = '~50 patterns';
-
-            } catch (error) {
-                console.error('Failed to load email workflow:', error);
-                document.getElementById('inbox-total-emails').textContent = 'Error';
-                document.getElementById('kv-stored-count').textContent = 'Error';
-            }
-        }
-
-        async function loadEmailCalculations(token) {
-            try {
-                const response = await fetch(`/api/email-calculations?token=${token}`);
-                const data = await response.json();
-
-                // Update table rows
-                const setRow = (id, answer, status) => {
-                    const answerEl = document.getElementById(id);
-                    const statusEl = document.getElementById(`${id}-status`);
-                    if (answerEl) answerEl.textContent = answer;
-                    if (statusEl) {
-                        const statusClass = status === 'yes' ? 'bg-green-500' :
-                                          status === 'empty' ? 'bg-amber-500' : 'bg-red-500';
-                        statusEl.innerHTML = `<div class="w-6 h-6 rounded-full mx-auto ${statusClass}"></div>`;
-                    }
-                };
-
-                setRow('calc-bridge-accounts', data.bridgeAccounts.answer, data.bridgeAccounts.status);
-                setRow('calc-accounts', '1 account (rose@mobicycle.ee)', 'yes');
-                setRow('calc-all-emails', data.allAccounts.answer, data.allAccounts.status);
-                setRow('calc-folders', data.folders.answer, data.folders.status);
-                setRow('calc-mobicycle', data.mobicycleOU.answer, data.mobicycleOU.status);
-                setRow('calc-whitelist', data.whitelist.answer, data.whitelist.status);
-                setRow('calc-kv', data.kvNamespace.answer, data.kvNamespace.status);
-                setRow('calc-inception', data.inception.answer, data.inception.status);
-                setRow('calc-largest-folder', data.largestFolder.answer, data.largestFolder.status);
-
-            } catch (error) {
-                console.error('Failed to load email calculations:', error);
-            }
-        }
-
-        // Load on page load
-        loadDashboard();
-
-        // Refresh every 30 seconds
-        setInterval(loadDashboard, 30000);
+        // Initialize dashboard
+        document.addEventListener('DOMContentLoaded', function() {
+            loadTabContent('localhost4000');
+        });
     </script>
 </body>
 </html>

@@ -52,16 +52,15 @@
                 <!-- Tabs Navigation -->
                 <div class="border-b border-slate-200 mt-10">
                     <nav class="flex space-x-1" aria-label="Tabs">
-                        <button class="px-4 py-2 text-sm font-medium rounded-t-lg bg-sky-50 text-sky-700 border-b-2 border-sky-500" onclick="switchTab('universal')" id="tab-universal">Universal</button>
-                        <button class="px-4 py-2 text-sm font-medium rounded-t-lg bg-transparent text-slate-600 border-b-2 border-transparent hover:bg-slate-50 hover:text-slate-700" onclick="switchTab('company')" id="tab-company">Company Specific</button>
-                        <button class="px-4 py-2 text-sm font-medium rounded-t-lg bg-transparent text-slate-600 border-b-2 border-transparent hover:bg-slate-50 hover:text-slate-700" onclick="switchTab('folders')" id="tab-folders">Folders <span id="tab-folders-count" class="ml-1 text-xs opacity-75">(-)</span></button>
-                        <button class="px-4 py-2 text-sm font-medium rounded-t-lg bg-transparent text-slate-600 border-b-2 border-transparent hover:bg-slate-50 hover:text-slate-700" onclick="switchTab('whitelist')" id="tab-whitelist">Filters <span id="tab-whitelist-count" class="ml-1 text-xs opacity-75">(-)</span></button>
-                        <button class="px-4 py-2 text-sm font-medium rounded-t-lg bg-transparent text-slate-600 border-b-2 border-transparent hover:bg-slate-50 hover:text-slate-700" onclick="switchTab('kvnamespaces')" id="tab-kvnamespaces">Transfers <span id="tab-kvnamespaces-count" class="ml-1 text-xs opacity-75">(-)</span></button>
-                        <button class="px-4 py-2 text-sm font-medium rounded-t-lg bg-transparent text-slate-600 border-b-2 border-transparent hover:bg-slate-50 hover:text-slate-700" onclick="switchTab('endpoints')" id="tab-endpoints">API Endpoints</button>
+                        <button class="px-4 py-2 text-sm font-medium rounded-t-lg bg-sky-50 text-sky-700 border-b-2 border-sky-500" onclick="switchTab('localhost4000')" id="tab-localhost4000">localhost:4000</button>
+                        <button class="px-4 py-2 text-sm font-medium rounded-t-lg bg-transparent text-slate-600 border-b-2 border-transparent hover:bg-slate-50 hover:text-slate-700" onclick="switchTab('localhost1143')" id="tab-localhost1143">localhost:1143</button>
+                        <button class="px-4 py-2 text-sm font-medium rounded-t-lg bg-transparent text-slate-600 border-b-2 border-transparent hover:bg-slate-50 hover:text-slate-700" onclick="switchTab('kvraw')" id="tab-kvraw">KV - Data - Raw <span id="tab-kvraw-count" class="ml-1 text-xs opacity-75">(-)</span></button>
+                        <button class="px-4 py-2 text-sm font-medium rounded-t-lg bg-transparent text-slate-600 border-b-2 border-transparent hover:bg-slate-50 hover:text-slate-700" onclick="switchTab('kvfiltered')" id="tab-kvfiltered">KV - Data - Filtered <span id="tab-kvfiltered-count" class="ml-1 text-xs opacity-75">(-)</span></button>
+                        <button class="px-4 py-2 text-sm font-medium rounded-t-lg bg-transparent text-slate-600 border-b-2 border-transparent hover:bg-slate-50 hover:text-slate-700" onclick="switchTab('kvfolders')" id="tab-kvfolders">KV - Folders <span id="tab-kvfolders-count" class="ml-1 text-xs opacity-75">(-)</span></button>
                     </nav>
                 </div>
 
-    <div id="universal" class="block">
+    <div id="localhost4000" class="block">
         <div class="mt-8 space-y-2">
             <h2 class="text-lg font-semibold leading-7 text-gray-900">CRON Jobs</h2>
             <p class="text-sm text-gray-600">Scheduled tasks running every 5 minutes with different job types</p>
@@ -499,7 +498,7 @@
         </table>
     </div>
 
-    <div id="company" class="hidden">
+    <div id="localhost1143" class="hidden">
         <div class="mt-8 space-y-2">
             <h2 class="text-lg font-semibold leading-7 text-gray-900">MobiCycle OÜ - Legal Email Processing</h2>
             <p class="text-sm text-gray-600">Project-specific configuration for legal email triage and classification</p>
@@ -943,7 +942,7 @@
         </table>
     </div>
 
-    <div id="folders" class="hidden">
+    <div id="kvraw" class="hidden">
         <div class="mt-8 space-y-2">
             <h2 class="text-lg font-semibold leading-7 text-gray-900">Email Folders</h2>
             <p class="text-sm text-gray-600">ProtonMail folder organization and email counts</p>
@@ -958,7 +957,7 @@
         </div>
     </div>
 
-    <div id="whitelist" class="hidden">
+    <div id="kvfiltered" class="hidden">
         <div class="mt-8 space-y-2">
             <h2 class="text-lg font-semibold leading-7 text-gray-900">Email Whitelist</h2>
             <p class="text-sm text-gray-600">Approved senders and domains for email processing</p>
@@ -973,7 +972,7 @@
         </div>
     </div>
 
-    <div id="kvnamespaces" class="hidden">
+    <div id="kvfolders" class="hidden">
         <div class="mt-8 space-y-2">
             <h2 class="text-lg font-semibold leading-7 text-gray-900">KV Namespaces</h2>
             <p class="text-sm text-gray-600">Email distribution across 35 categorized storage namespaces</p>
@@ -1106,21 +1105,21 @@
 
         function switchTab(tabName) {
             // Hide all tabs
-            document.getElementById('universal').classList.add('hidden');
-            document.getElementById('universal').classList.remove('block');
-            document.getElementById('company').classList.add('hidden');
-            document.getElementById('company').classList.remove('block');
-            document.getElementById('folders').classList.add('hidden');
-            document.getElementById('folders').classList.remove('block');
-            document.getElementById('whitelist').classList.add('hidden');
-            document.getElementById('whitelist').classList.remove('block');
-            document.getElementById('kvnamespaces').classList.add('hidden');
-            document.getElementById('kvnamespaces').classList.remove('block');
+            document.getElementById('localhost4000').classList.add('hidden');
+            document.getElementById('localhost4000').classList.remove('block');
+            document.getElementById('localhost1143').classList.add('hidden');
+            document.getElementById('localhost1143').classList.remove('block');
+            document.getElementById('kvraw').classList.add('hidden');
+            document.getElementById('kvraw').classList.remove('block');
+            document.getElementById('kvfiltered').classList.add('hidden');
+            document.getElementById('kvfiltered').classList.remove('block');
+            document.getElementById('kvfolders').classList.add('hidden');
+            document.getElementById('kvfolders').classList.remove('block');
             document.getElementById('endpoints').classList.add('hidden');
             document.getElementById('endpoints').classList.remove('block');
 
             // Remove active state from all buttons
-            ['tab-universal', 'tab-company', 'tab-folders', 'tab-whitelist', 'tab-kvnamespaces', 'tab-endpoints'].forEach(id => {
+            ['tab-localhost4000', 'tab-localhost1143', 'tab-kvraw', 'tab-kvfiltered', 'tab-kvfolders', 'tab-endpoints'].forEach(id => {
                 const btn = document.getElementById(id);
                 // Remove active classes
                 btn.classList.remove('bg-blue-100', 'text-blue-700', 'border-blue-500');

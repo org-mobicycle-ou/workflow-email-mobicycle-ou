@@ -22,6 +22,11 @@ import { handleRunKvNamespaceFinal } from './routes/run-kv-namespace-final';
 // Sort (new step between filter and triage)
 import { handleSort } from './routes/sort';
 
+// Pipeline data namespaces
+import { handleRawDataHeaders } from './routes/raw-data-headers';
+import { handleFilteredDataHeaders } from './routes/filtered-data-headers';
+import { handleTodoScanner } from './routes/todo-scanner';
+
 // Triage (GET reads, POST executes)
 import { handleTriageDetermine } from './routes/triage-determine';
 import { handleTriageNoAction } from './routes/triage-no-action';
@@ -65,6 +70,11 @@ export default {
     // Sort (between filter and triage)
     if (path === '/sort') return handleSort(request, env);
 
+    // Pipeline data namespaces
+    if (path === '/raw-data-headers') return handleRawDataHeaders(request, env);
+    if (path === '/filtered-data-headers') return handleFilteredDataHeaders(request, env);
+    if (path === '/todo-scanner') return handleTodoScanner(request, env);
+
     // Triage
     if (path === '/triage-determine') return handleTriageDetermine(request, env);
     if (path === '/triage-no-action') return handleTriageNoAction(request, env);
@@ -104,6 +114,13 @@ export default {
         ],
         sort: [
           'GET|POST /sort',
+        ],
+        data: [
+          'GET|DELETE|POST /raw-data-headers',
+          'GET|DELETE|PUT /filtered-data-headers',
+        ],
+        todo: [
+          'GET /todo-scanner',
         ],
         triage: [
           'GET|POST /triage-determine',

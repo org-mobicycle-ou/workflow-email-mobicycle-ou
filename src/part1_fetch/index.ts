@@ -96,7 +96,12 @@ export async function fetchEmails(tunnelUrl: string): Promise<FetchResult> {
   const response = await fetch(`${tunnelUrl}/fetch-emails`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ folder: 'All Mail', limit: 100 }),
+    body: JSON.stringify({ 
+      folder: 'All Mail', 
+      limit: 100,
+      includeBody: true,
+      excludeFolders: ['Spam', 'Junk', 'Trash', 'Deleted Items']
+    }),
     signal: AbortSignal.timeout(30000),
   });
 
@@ -116,13 +121,20 @@ export async function fetchEmails(tunnelUrl: string): Promise<FetchResult> {
 
   const inbound = all.filter((e) => {
     const fromLower = e.from.toLowerCase();
+    
+    // Only filter out Rose's sent emails - keep everything else for RAW storage
     return !ROSE_ADDRESSES.some((addr) => fromLower.includes(addr));
+  });
+
+  // Remove duplicates by messageId (emails should have unique messageId)
+  const deduped = inbound.filter((email, index, arr) => {
+    return arr.findIndex(e => e.messageId === email.messageId) === index;
   });
 
   return {
     fetched: all.length,
     inbound: inbound.length,
-    filtered: all.length - inbound.length,
-    emails: inbound,
+    filtered: all.length - deduped.length,
+    emails: deduped,
   };
 }

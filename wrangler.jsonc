@@ -3,7 +3,7 @@
   // DO NOT deploy to other accounts - contains legal privileged logic
 
   "name": "workflow-email",
-  "main": "src/4_workflowEntrypoints/index.ts",
+  "main": "src/index.ts",
   "compatibility_date": "2025-12-23",
   "compatibility_flags": ["nodejs_compat"],
 
@@ -17,7 +17,7 @@
   // Job types: monitoring (every 4 hours), fetching (every 10 min), sorting (offset +5), categorization (offset +8)
   // Total: 288 requests/day (well within 100k free tier)
   "triggers": {
-    "crons": ["*/5 * * * *"]  // Every 5 minutes - job type determined by scheduled handler
+    "crons": ["*/2 * * * *", "*/5 * * * *", "0 * * * *"]  // prereqs (2min), connect (5min), status (hourly)
   },
   
   // CRITICAL: MobiCycle OÜ account ID only

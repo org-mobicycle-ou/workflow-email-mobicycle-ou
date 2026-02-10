@@ -1,0 +1,49 @@
+{
+  "account": {
+    "name": "MobiCycle Technologies",
+    "id": "mobicycle-ou",
+    "environment": "production"
+  },
+  "email": {
+    "accounts": [
+      {
+        "email": "admin@mobicycle.com",
+        "type": "primary"
+      },
+      {
+        "email": "support@mobicycle.com",
+        "type": "support"
+      }
+    ],
+    "classification": {
+      "customRules": [
+        {
+          "name": "client-projects",
+          "keywords": ["project", "client", "delivery"],
+          "folder": "projects",
+          "priority": "high"
+        },
+        {
+          "name": "contracts",
+          "keywords": ["contract", "agreement", "legal"],
+          "folder": "legal"
+        }
+      ]
+    },
+    "processing": {
+      "batchSize": 15
+    }
+  },
+  "cron": {
+    "schedules": {
+      "fetchEmails": "*/3 * * * *"
+    }
+  },
+  "kv": {
+    "namespaces": {
+      "emails": "email_mobicycle_production",
+      "classifications": "classify_mobicycle_production",
+      "queue": "queue_mobicycle_production"
+    }
+  }
+}

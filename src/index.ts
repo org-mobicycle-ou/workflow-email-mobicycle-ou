@@ -19,6 +19,9 @@ import { handleRunKvNamespaceRaw } from './routes/run-kv-namespace-raw';
 import { handleRunKvNamespaceFiltered } from './routes/run-kv-namespace-filtered';
 import { handleRunKvNamespaceFinal } from './routes/run-kv-namespace-final';
 
+// Sort (new step between filter and triage)
+import { handleSort } from './routes/sort';
+
 // Triage (GET reads, POST executes)
 import { handleTriageDetermine } from './routes/triage-determine';
 import { handleTriageNoAction } from './routes/triage-no-action';
@@ -59,6 +62,9 @@ export default {
     if (path === '/run-kv-namespace-filtered') return handleRunKvNamespaceFiltered(env);
     if (path === '/run-kv-namespace-final') return handleRunKvNamespaceFinal(env);
 
+    // Sort (between filter and triage)
+    if (path === '/sort') return handleSort(request, env);
+
     // Triage
     if (path === '/triage-determine') return handleTriageDetermine(request, env);
     if (path === '/triage-no-action') return handleTriageNoAction(request, env);
@@ -95,6 +101,9 @@ export default {
           'GET /run-kv-namespace-raw',
           'GET /run-kv-namespace-filtered',
           'GET /run-kv-namespace-final',
+        ],
+        sort: [
+          'GET|POST /sort',
         ],
         triage: [
           'GET|POST /triage-determine',
